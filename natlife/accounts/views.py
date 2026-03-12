@@ -19,7 +19,7 @@ from firebase_admin import auth
 from core.permissions import RoleBasedPermission
 from core.constants import Roles
 
-from .models import User, Region, Invitation
+from .models import User, Role, Region, Invitation
 from .serializers import (
     RegionSerializer,
     UserSerializer,
@@ -110,14 +110,22 @@ class UserViewSet(ModelViewSet):
             )
             .prefetch_related("roles")
             .exclude(pk=user.pk)
-            .exclude(roles__in=[Roles.SUPER_ADMIN])
+            .exclude(
+                roles__in=[
+                    Role.objects.get(name=Roles.SUPER_ADMIN).pk
+                ]
+            )
         )
 
         if user.has_role(Roles.SUPER_ADMIN):
             return qs
 
         if user.has_role(Roles.ADMIN):
-            return qs.filter(region=user.region).exclude(roles__in=user.roles.all())
+            return qs.filter(
+                region=user.region
+            ).exclude(
+                roles__in=user.roles.all()
+            )
 
         return qs.none()
 
