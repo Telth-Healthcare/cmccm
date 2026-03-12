@@ -5,22 +5,19 @@
       "src": "natlife/natlife/wsgi.py",
       "use": "@vercel/python",
       "config": {
+        "projectRoot": "natlife",
         "installCommand": "pip install -r requirements/local.txt"
       }
     }
   ],
   "routes": [
     {
-      "src": "/static/(.*)",
-      "dest": "/static/$1"
-    },
-    {
       "src": "/(.*)",
       "dest": "natlife/natlife/wsgi.py"
     }
   ],
   "env": {
-    "DJANGO_SETTINGS_MODULE": "natlife.settings.local",
+    "DJANGO_SETTINGS_MODULE": "natlife.config.local",
     "PYTHONPATH": "natlife"
   }
 }
