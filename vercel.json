@@ -1,13 +1,11 @@
 {
   "version": 2,
-  "buildCommand": "pip install -r requirements/local.txt && python natlife/manage.py collectstatic --noinput --clear",
-  "installCommand": "pip install -r requirements/local.txt",
   "builds": [
     {
       "src": "natlife/natlife/wsgi.py",
       "use": "@vercel/python",
       "config": {
-        "maxLambdaSize": "15mb"
+        "installCommand": "pip install -r requirements/local.txt"
       }
     }
   ],
