@@ -1,0 +1,9 @@
+services:
+  web:
+    image: cmccm
+    build: .
+    container_name: cmccm
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env

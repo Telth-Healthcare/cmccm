@@ -1,0 +1,5 @@
+-r base.txt
+
+gunicorn>=25.1
+gevent>=25.9.1
+boto3>=1.42.59

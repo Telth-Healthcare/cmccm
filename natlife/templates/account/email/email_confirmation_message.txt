@@ -1,0 +1,7 @@
+Welcome to {{ site_name }}
+
+Please confirm your email address by visiting the link below:
+
+{{ activate_url }}
+
+If you did not create this account, you can ignore this email.

@@ -1,0 +1,19 @@
+{
+  "builds": [
+    {
+      "src": "natlife/natlife/wsgi.py",
+      "use": "@vercel/python",
+      "config": { "projectRoot": "natlife" }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "natlife/natlife/wsgi.py"
+    }
+  ],
+  "env": {
+    "DJANGO_SETTINGS_MODULE": "natlife.settings.production",
+    "PYTHONPATH": "natlife"
+  }
+}

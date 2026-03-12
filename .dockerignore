@@ -1,0 +1,39 @@
+# .dockerignore
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Django
+# *.sqlite3
+media/
+staticfiles/
+
+# Environment files
+# .env
+# .env.*
+
+# Git
+.git/
+.gitignore
+
+# Docker
+Dockerfile
+docker-compose*.yml
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+logs/
