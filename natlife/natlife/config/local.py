@@ -41,6 +41,9 @@ if os.getenv("STAGING"):
     SHG_URL = os.getenv("STAGING_SHG_URL")
     APPLICATIONS_URL = os.getenv("STAGING_APPLICATIONS_URL")
     ADMIN_PANEL_URL = os.getenv("STAGING_ADMIN_PANEL_URL")
+    REST_FRAMEWORK["DEFAULT_RENDERER_CLASSES"] = [
+        "rest_framework.renderers.JSONRenderer",
+    ]
 else:
     CORE_URL = "http://127.0.0.1:8000"
     ACCOUNTS_URL = "http://127.0.0.1:8000"
