@@ -1,12 +1,12 @@
 {
   "version": 2,
-  "buildCommand": "pip install -r requirements.txt && python natlife/manage.py collectstatic --noinput --clear",
-  "installCommand": "pip install -r requirements.txt",
   "builds": [
     {
       "src": "natlife/natlife/wsgi.py",
       "use": "@vercel/python",
-      "config": {}
+      "config": {
+        "maxLambdaSize": "15mb"
+      }
     }
   ],
   "routes": [
@@ -20,7 +20,7 @@
     }
   ],
   "env": {
-    "DJANGO_SETTINGS_MODULE": "natlife.settings.production",
+    "DJANGO_SETTINGS_MODULE": "natlife.settings.local",
     "PYTHONPATH": "natlife"
   }
 }
