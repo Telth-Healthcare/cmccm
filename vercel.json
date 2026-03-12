@@ -4,10 +4,7 @@
     {
       "src": "natlife/natlife/wsgi.py",
       "use": "@vercel/python",
-      "config": {
-        "projectRoot": "natlife",
-        "installCommand": "pip install -r requirements/base.txt"
-      }
+      "config": { "projectRoot": "natlife" }
     }
   ],
   "routes": [
