@@ -35,8 +35,15 @@ CORS_ALLOW_CREDENTIALS = True
 # ------------------------------------------------------------------------------
 # BACKEND URLS
 # ------------------------------------------------------------------------------
-CORE_URL = "http://127.0.0.1:8000"
-ACCOUNTS_URL = "http://127.0.0.1:8000"
-SHG_URL = "http://127.0.0.1:8000"
-APPLICATIONS_URL = "http://127.0.0.1:8000"
-ADMIN_PANEL_URL = "http://127.0.0.1:8000"
+if os.getenv("STAGING"):
+    CORE_URL = os.getenv("STAGING_CORE_URL")
+    ACCOUNTS_URL = os.getenv("STAGING_ACCOUNTS_URL")
+    SHG_URL = os.getenv("STAGING_SHG_URL")
+    APPLICATIONS_URL = os.getenv("STAGING_APPLICATIONS_URL")
+    ADMIN_PANEL_URL = os.getenv("STAGING_ADMIN_PANEL_URL")
+else:
+    CORE_URL = "http://127.0.0.1:8000"
+    ACCOUNTS_URL = "http://127.0.0.1:8000"
+    SHG_URL = "http://127.0.0.1:8000"
+    APPLICATIONS_URL = "http://127.0.0.1:8000"
+    ADMIN_PANEL_URL = "http://127.0.0.1:8000"
