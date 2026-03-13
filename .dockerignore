@@ -32,3 +32,7 @@ docker-compose*.yml
 # Logs
 *.log
 logs/
+
+# Vercel
+vercel.json
+pyproject.toml
