@@ -14,7 +14,7 @@
     }
   ],
   "env": {
-    "DJANGO_SETTINGS_MODULE": "natlife.config.local",
+    "DJANGO_SETTINGS_MODULE": "natlife.config.staging",
     "PYTHONPATH": "natlife"
   }
 }
