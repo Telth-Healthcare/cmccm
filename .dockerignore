@@ -1,12 +1,11 @@
 # .dockerignore
 
 # Python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
-*.egg-info/
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+**/*.egg-info/
 
 # Virtual environments
 venv/
@@ -14,13 +13,9 @@ venv/
 env/
 
 # Django
-# *.sqlite3
-media/
-staticfiles/
-
-# Environment files
-# .env
-# .env.*
+**/*.sqlite3
+**/media/
+**/staticfiles/
 
 # Git
 .git/
