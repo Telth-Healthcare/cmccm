@@ -27,6 +27,7 @@ CSRF_TRUSTED_ORIGINS = [
     "https://*.ngrok-free.dev",
     "https://cm-ccm-onboarding.vercel.app",
     "https://cmccm.vercel.app",
+    "https://app.telth.care",
 ]
 CORS_ALLOWED_ORIGINS = CSRF_TRUSTED_ORIGINS
 
