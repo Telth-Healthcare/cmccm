@@ -1,35 +1,39 @@
 from django.core.files.storage import Storage
-from supabase import create_client
+from supabase import create_client, Client
 from django.conf import settings
 
 from .services import CoreService
+
+MEDIA_ROOT = getattr(settings, "MEDIA_ROOT")
 
 
 # -------------------------
 # SUPABASE STORAGE
 # -------------------------
 class SupabaseMediaStorage(Storage):
-    config: dict = settings.SUPABASE_STORAGE
+    config: dict = getattr(settings, "SUPABASE_CONFIG", {})
 
     def __init__(self):
-        self.client = create_client(
-            self.config['SUPABASE_URL'],
-            self.config['SUPABASE_KEY']
+        self.client: Client = create_client(
+            self.config["SUPABASE_URL"],
+            self.config["SUPABASE_KEY"]
         )
-        if self.client.storage.list_buckets() and self.config['SUPABASE_BUCKET'] in self.client.storage.list_buckets():
-            self.bucket = self.config['SUPABASE_BUCKET']
-        else:
+
+        self.bucket_exists = (
+            self.client.storage.list_buckets() and
+            self.config["SUPABASE_BUCKET"] in [b.name for b in self.client.storage.list_buckets()]
+        )
+        if not self.bucket_exists:
             self.client.storage.create_bucket(
-                self.config['SUPABASE_BUCKET'],
-                options={
-                    "public": True,
-                    # "allowed_mime_types": ["image/*"]
-                }
+                self.config["SUPABASE_BUCKET"],
+                options={"public": True}
             )
-            self.bucket = self.config['SUPABASE_BUCKET']
+            self.bucket = self.config["SUPABASE_BUCKET"]
+        else:
+            self.bucket = self.config["SUPABASE_BUCKET"]
 
     def _save(self, name, content):
-        filename = f"{settings.MEDIA_ROOT}{CoreService.create_uuid_filename(name)}"
+        filename = f"{MEDIA_ROOT}{CoreService.create_uuid_filename(name)}"
 
         # Must read bytes
         file_bytes = content.read()
