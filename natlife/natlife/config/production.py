@@ -62,16 +62,14 @@ STORAGES = {
     "default": {
         "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
         "OPTIONS": {
-            "location": "media",          # S3 folder: /media/
-            "file_overwrite": False,      # Don't overwrite duplicate filenames
-            "default_acl": "public-read",
+            "location": "media",
+            "file_overwrite": False,
         },
     },
     "staticfiles": {
         "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
         "OPTIONS": {
-            "location": "static",         # S3 folder: /static/
-            "default_acl": "public-read", # Static files must be publicly readable
+            "location": "static",
         },
     },
 }
