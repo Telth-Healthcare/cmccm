@@ -32,4 +32,5 @@ urlpatterns = [
     path("shg/", include("shg.urls")),
     path("applications/", include("applications.urls")),
     path("admin/", include("admin_panel.urls")),
+    path("web/", include("website.urls")),
 ] + static(MEDIA_URL, document_root=MEDIA_ROOT)
