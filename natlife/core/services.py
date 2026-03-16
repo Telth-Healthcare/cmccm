@@ -1,6 +1,8 @@
+import uuid
 import importlib
 import inspect
 import requests
+from pathlib import Path
 
 from django.db import models
 from django.utils import timezone
@@ -8,6 +10,7 @@ from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 
 from anymail.exceptions import AnymailRequestsAPIError
+
 
 from .models import ActivityLog
 from .constants import Roles
@@ -106,3 +109,37 @@ class CoreService:
     @staticmethod
     def current_year():
         return timezone.now().year
+
+    @staticmethod
+    def create_uuid_filename(original_path_str: str) -> str:
+        """
+        Takes an original file path string, inserts a UUID before the filename,
+        and returns the new, dynamic file path string.
+
+        Args:
+            original_path_str: The full path to the file (e.g., "banners/image.jpg").
+
+        Returns:
+            The new file path with a UUID prepended to the filename 
+            (e.g., "banners/a1b2c3d4-xxxx-yyyy-zzzz-1234567890ab-image.jpg").
+        """
+        # Use pathlib for clean, OS-agnostic path handling
+        original_path = Path(original_path_str)
+
+        # 1. Get the path to the parent directory (e.g., 'banners')
+        parent_dir = original_path.parent
+
+        # 2. Get the file's original name including the extension (e.g., 'image.jpg')
+        original_filename = original_path.name
+
+        # 3. Generate a UUID
+        uid = uuid.uuid4()
+
+        # 4. Construct the new filename with the UUID prepended
+        new_filename = f"{uid}_{original_filename}"
+
+        # 5. Join the parent directory and the new filename to form the new path
+        new_path = parent_dir / new_filename
+
+        # Return the new path as a string
+        return str(new_path).replace("\\", "/")

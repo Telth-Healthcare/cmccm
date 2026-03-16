@@ -13,5 +13,6 @@ dependencies = [
     "psycopg[binary]>=3.3.3",
     "dj-database-url>=3.1.2",
     "python-dotenv>=1.2.1",
-    "firebase-admin"
+    "firebase-admin",
+    "supabase>=2.28.2"
 ]

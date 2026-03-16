@@ -3,7 +3,23 @@ from .local import *
 
 
 DATABASES = {
-    'default': dj_database_url.parse(os.getenv('STAGING_SUPABASE_DB'))
+    "default": dj_database_url.parse(os.getenv("STAGING_SUPABASE_DB"))
+}
+
+
+SUPABASE_STORAGE = {
+    "SUPABASE_URL": os.getenv("STAGING_SUPABASE_URL"),
+    "SUPABASE_KEY": os.getenv("STAGING_SUPABASE_KEY"),
+    "SUPABASE_BUCKET": os.getenv("STAGING_SUPABASE_BUCKET"),
+}
+
+
+STORAGES = {
+    "default": {
+        "BACKEND": "backend.storage.SupabaseMediaStorage",
+    },
+
+    "staticfiles": {}
 }
 
 
