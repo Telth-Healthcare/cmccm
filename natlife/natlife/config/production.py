@@ -25,6 +25,7 @@ ANYMAIL = {
 # ------------------------------------------------------------------------------
 CSRF_TRUSTED_ORIGINS = [
     "https://api.telth.care",
+    "https://app.telth.care",
     "https://partner.telth.care",
     "https://admin.telth.care",
 ]

@@ -30,6 +30,7 @@ LOCAL_APPS = [
     "shg",
     "applications",
     "admin_panel",
+    "website",
 ]
 
 

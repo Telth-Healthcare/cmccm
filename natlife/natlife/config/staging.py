@@ -28,12 +28,15 @@ REST_FRAMEWORK["DEFAULT_RENDERER_CLASSES"] = [
 ]
 
 
+CSRF_TRUSTED_ORIGINS += [
+    "https://cm-ccm-onboarding.vercel.app",
+    "https://cmccm.vercel.app",
+]
+CORS_ALLOWED_ORIGINS = CSRF_TRUSTED_ORIGINS
+
+
 CORE_URL = os.getenv("STAGING_CORE_URL")
 ACCOUNTS_URL = os.getenv("STAGING_ACCOUNTS_URL")
 SHG_URL = os.getenv("STAGING_SHG_URL")
 APPLICATIONS_URL = os.getenv("STAGING_APPLICATIONS_URL")
 ADMIN_PANEL_URL = os.getenv("STAGING_ADMIN_PANEL_URL")
-
-
-CSRF_TRUSTED_ORIGINS.append("https://cmccm.vercel.app")
-CORS_ALLOWED_ORIGINS = CSRF_TRUSTED_ORIGINS
