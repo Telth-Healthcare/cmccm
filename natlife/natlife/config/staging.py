@@ -16,7 +16,7 @@ SUPABASE_STORAGE = {
 
 STORAGES = {
     "default": {
-        "BACKEND": "backend.storage.SupabaseMediaStorage",
+        "BACKEND": "core.storage.SupabaseMediaStorage",
     },
 
     "staticfiles": {}
