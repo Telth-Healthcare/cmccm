@@ -67,7 +67,7 @@ class ApplicationViewSet(ModelViewSet):
             """
             return qs.filter(assigned_financier=user).exclude(user__is_active=False)
         elif user.has_role(Roles.TRAINER):
-            return qs.filter(assigned_trainer=user).exclude(payment_clearance=PaymentClearance.PENDING)
+            return qs.filter(assigned_trainer=user).exclude(payment_status=PaymentClearance.PENDING)
 
         return qs.filter(user=user)
 
