@@ -83,7 +83,11 @@ class Document(models.Model):
         choices=DocumentType.choices,
     )
 
-    file = models.FileField(upload_to="documents/", validators=[FileSizeValidator(5)])
+    file = models.FileField(
+        upload_to="documents/",
+        max_length=500,
+        validators=[FileSizeValidator(5)]
+    )
 
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
