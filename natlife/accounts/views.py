@@ -16,6 +16,8 @@ from allauth.headless.tokens.strategies.jwt.strategy import JWTTokenStrategy
 
 from firebase_admin import auth
 
+from django_filters.rest_framework import DjangoFilterBackend
+
 from core.permissions import RoleBasedPermission
 from core.constants import Roles
 
@@ -69,12 +71,12 @@ class InvitationViewSet(ModelViewSet):
     serializer_class = SendInviteSerializer
     permission_classes = [RoleBasedPermission]
     role_permissions = {
-        "list": [Roles.SUPER_ADMIN],
-        "retrieve": [Roles.SUPER_ADMIN],
-        "create": [Roles.SUPER_ADMIN],
-        "update": [Roles.SUPER_ADMIN],
-        "partial_update": [Roles.SUPER_ADMIN],
-        "destroy": [Roles.SUPER_ADMIN],
+        "list": [Roles.SUPER_ADMIN, Roles.ADMIN],
+        "retrieve": [Roles.SUPER_ADMIN, Roles.ADMIN],
+        "create": [],
+        "update": [],
+        "partial_update": [],
+        "destroy": [],
     }
 
 
@@ -84,7 +86,12 @@ class InvitationViewSet(ModelViewSet):
 
 class UserViewSet(ModelViewSet):
     queryset = User.objects.all()
-    filter_backends = [OrderingFilter]
+    filter_backends = [OrderingFilter, DjangoFilterBackend]
+    filterset_fields = {
+        "roles": ["exact"],
+        "roles__name": ["exact", "icontains"],
+        "manager": ["exact"],
+    }
     ordering = ["-created_at"]
     serializer_class = UserSerializer
     permission_classes = [RoleBasedPermission]
@@ -125,6 +132,8 @@ class UserViewSet(ModelViewSet):
                 region=user.region
             ).exclude(
                 roles__in=user.roles.all()
+            ).exclude(
+                region__isnull=True
             )
 
         return qs.none()
@@ -224,6 +233,7 @@ class AcceptInviteAPIView(APIView):
 
     permission_classes = []
 
+    @transaction.atomic
     def post(self, request: Request):
 
         serializer = AcceptInviteSerializer(data=request.data)
@@ -264,6 +274,11 @@ class AcceptInviteAPIView(APIView):
         user.save()
 
         user.roles.set(invite.roles.all())
+
+        region = Region.objects.filter(pk=invite.region.pk).first()
+        if region:
+            region.admin = user
+            region.save(update_fields=["admin"])
 
         invite.accepted = True
         invite.save(update_fields=["accepted"])

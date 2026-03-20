@@ -18,6 +18,7 @@ class ConstantsMetaAPI(APIView):
             **CoreService.get_role_constants(),
             **CoreService.get_shg_constants(),
             **CoreService.get_applications_constants(),
+            **CoreService.get_trainer_constants(),
         })
 
 

@@ -66,7 +66,7 @@ class RoleBasedPermission(BasePermission):
         if obj_user and obj_user != user:
             return False
 
-        if user.role_names.intersection({Roles.ADMIN, Roles.CM, Roles.CCM}):
+        if user.role_names.intersection({Roles.ADMIN, Roles.TRAINER, Roles.CM, Roles.CCM}):
             obj_region = getattr(obj, "region", None)
             if obj_region:
                 return obj_region == user.region

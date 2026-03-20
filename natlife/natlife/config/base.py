@@ -31,6 +31,7 @@ LOCAL_APPS = [
     "applications",
     "admin_panel",
     "website",
+    "trainer",
 ]
 
 

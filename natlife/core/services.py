@@ -20,6 +20,7 @@ EMAIL_HOST_USER = getattr(settings, "EMAIL_HOST_USER")
 ACCOUNTS_URL = getattr(settings, "ACCOUNTS_URL")
 SHG_URL =  getattr(settings, "SHG_URL")
 APPLICATIONS_URL = getattr(settings, "APPLICATIONS_URL")
+TRAINER_URL = getattr(settings, "TRAINER_URL")
 ADMIN_PANEL_URL = getattr(settings, "ADMIN_PANEL_URL")
 
 
@@ -101,6 +102,14 @@ class CoreService:
     @staticmethod
     def get_applications_constants():
         url = f"{APPLICATIONS_URL}/applications/constants/"
+        response = requests.get(url)
+        if response.status_code == 200:
+            return response.json()
+        return {}
+
+    @staticmethod
+    def get_trainer_constants():
+        url = f"{APPLICATIONS_URL}/trainer/constants/"
         response = requests.get(url)
         if response.status_code == 200:
             return response.json()

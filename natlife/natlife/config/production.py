@@ -40,6 +40,7 @@ CORE_URL = os.getenv("CORE_URL", "http://127.0.0.1:8000")
 ACCOUNTS_URL = os.getenv("ACCOUNTS_URL", "http://127.0.0.1:8000")
 SHG_URL = os.getenv("SHG_URL", "http://127.0.0.1:8000")
 APPLICATIONS_URL = os.getenv("APPLICATIONS_URL", "http://127.0.0.1:8000")
+TRAINER_URL = os.getenv("TRAINER_URL", "http://127.0.0.1:8000")
 ADMIN_PANEL_URL = os.getenv("ADMIN_PANEL_URL", "http://127.0.0.1:8000")
 
 # ------------------------------------------------------------------------------
