@@ -79,6 +79,18 @@ class InvitationViewSet(ModelViewSet):
         "destroy": [],
     }
 
+    def get_queryset(self):
+        qs = super().get_queryset()
+        user = self.request.user
+
+        if user.has_role(Roles.SUPER_ADMIN):
+            return qs
+
+        if user.has_role(Roles.ADMIN):
+            return qs.filter(invited_by=user)
+
+        return qs.none()
+
 
 # ─────────────────────────────────────────────
 # Users
@@ -89,7 +101,7 @@ class UserViewSet(ModelViewSet):
     filter_backends = [OrderingFilter, DjangoFilterBackend]
     filterset_fields = {
         "roles": ["exact"],
-        "roles__name": ["exact", "icontains"],
+        "roles__name": ["exact", "icontains", "in"],
         "manager": ["exact"],
     }
     ordering = ["-created_at"]

@@ -98,6 +98,7 @@ class SendInviteSerializer(serializers.ModelSerializer):
         slug_field="name",
         queryset=Role.objects.all(),
     )
+    region_name = serializers.CharField(source="region.name", read_only=True)
 
     class Meta:
         model = Invitation
