@@ -29,7 +29,7 @@ urlpatterns = [
     path("accounts/", include("accounts.urls")),
     path("_accounts/", include("allauth.urls")),
     path("_allauth/", include("allauth.headless.urls")),
-    path("shg/", include("shg.urls")),
+    path("partners/", include("shg.urls")),
     path("applications/", include("applications.urls")),
     path("admin/", include("admin_panel.urls")),
     path("web/", include("website.urls")),

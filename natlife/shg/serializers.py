@@ -6,27 +6,16 @@ from accounts.serializers import UserSerializer
 from .models import SHG, Document
 
 
+class DocumentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Document
+        fields = "__all__"
+        read_only_fields = ["id"]
+
+
 class SHGSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
-    documents = serializers.SerializerMethodField()
-
-    def get_documents(self, obj):
-        shg = obj.user.shg
-        if not shg:
-            return None
-
-        document = shg.documents.exists()
-        if not document:
-            return None
-        
-        payload = []
-        for document in shg.documents.all():
-            payload.append({
-                "document_type": document.document_type,
-                "file": document.file.url,
-            })
-
-        return payload
+    documents = DocumentSerializer(many=True, read_only=True)
 
     class Meta:
         model = SHG
@@ -63,10 +52,3 @@ class CreateSHGSerializer(serializers.ModelSerializer):
         if shg.exists():
             raise serializers.ValidationError("SHG already exists")
         return super().create(validated_data)
-
-
-class DocumentSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Document
-        fields = "__all__"
-        read_only_fields = ["id"]

@@ -9,10 +9,10 @@ from .views import (
 
 
 router = DefaultRouter()
-router.register("app", SHGViewSet)
+router.register("", SHGViewSet)
 router.register("documents", DocumentUploadAPI)
 
 urlpatterns = [
     path("constants/", SHGConstantMetaAPI.as_view()),
-    path("", include(router.urls)),
+    path("app/", include(router.urls)),
 ]
