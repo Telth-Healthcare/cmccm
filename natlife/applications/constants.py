@@ -7,6 +7,7 @@ class ApplicationStatus(models.TextChoices):
     ASSIGNED = "assigned"
     TRAINING = "training"
     PRODUCTION = "production"
+    ACTION_REQUIRED = "action_required"
     REJECTED = "rejected"
 
 

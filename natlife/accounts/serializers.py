@@ -260,7 +260,6 @@ class SendInviteSerializer(serializers.ModelSerializer):
         invitation.roles.set(roles)
 
         # Send email before saving is_sent
-        raise NotImplementedError("TESTING")
         invitation.is_sent = AccountServices.send_invitation(request, invitation)
         invitation.save(update_fields=["is_sent"])
 
