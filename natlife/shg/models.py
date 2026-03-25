@@ -89,6 +89,8 @@ class Document(models.Model):
         validators=[FileSizeValidator(5)]
     )
 
+    is_approved = models.BooleanField(default=False)
+
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
 
