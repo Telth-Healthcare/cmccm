@@ -136,6 +136,11 @@ class SendInviteSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Region already has an admin.")
         return value
 
+    def validate_manager(self, value: User):
+        if value and not value.has_role(Roles.ADMIN):
+            raise serializers.ValidationError(f"'{value.get_full_name()}' cannot be a manager.")
+        return value
+
     # -------------------------
     # HELPERS
     # -------------------------
@@ -255,6 +260,7 @@ class SendInviteSerializer(serializers.ModelSerializer):
         invitation.roles.set(roles)
 
         # Send email before saving is_sent
+        raise NotImplementedError("TESTING")
         invitation.is_sent = AccountServices.send_invitation(request, invitation)
         invitation.save(update_fields=["is_sent"])
 
