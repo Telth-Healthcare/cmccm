@@ -9,7 +9,7 @@ from .views import (
 
 
 router = DefaultRouter()
-router.register("", SHGViewSet)
+router.register("cm-ccm", SHGViewSet)
 router.register("documents", DocumentUploadAPI)
 
 urlpatterns = [

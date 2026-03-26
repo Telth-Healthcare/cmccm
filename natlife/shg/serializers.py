@@ -26,8 +26,9 @@ class SHGSerializer(serializers.ModelSerializer):
         pincode = validated_data.get("pin_code")
         if pincode:
             pincode_obj = Pincode.objects.filter(code=pincode).first()
-            instance.user.region = pincode_obj.region
-            instance.user.save()
+            if pincode_obj:
+                instance.user.region = pincode_obj.region
+                instance.user.save()
         return super().update(instance, validated_data)
 
 
@@ -50,5 +51,5 @@ class CreateSHGSerializer(serializers.ModelSerializer):
         user = self.context["request"].user
         shg = SHG.objects.filter(user=user)
         if shg.exists():
-            raise serializers.ValidationError("SHG already exists")
+            raise serializers.ValidationError("Partner already exists")
         return super().create(validated_data)

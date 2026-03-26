@@ -93,7 +93,7 @@ class CoreService:
 
     @staticmethod
     def get_shg_constants():
-        url = f"{SHG_URL}/shg/constants/"
+        url = f"{SHG_URL}/partners/constants/"
         response = requests.get(url)
         if response.status_code == 200:
             return response.json()
