@@ -9,7 +9,6 @@ from rest_framework.authtoken.models import Token
 from allauth.account.adapter import DefaultAccountAdapter
 from allauth.headless.adapter import DefaultHeadlessAdapter
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
-from allauth.account.models import EmailAddress
 
 from .models import User
 from .serializers import UserSerializer
@@ -29,9 +28,9 @@ class CustomAccountAdapter(DefaultAccountAdapter):
     server-rendered view — we redirect to the SPA instead.
     """
 
-    def confirm_email(self, request, email_address: EmailAddress):
-        super().confirm_email(request, email_address)
-        return email_address
+    def set_is_active(self, user: User, is_active: bool):
+        user.is_active = is_active
+        user.save(update_fields=["is_active"])
 
     def get_phone(self, user: User):
         return user.phone, user.phone_verified

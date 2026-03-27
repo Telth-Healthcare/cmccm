@@ -55,8 +55,6 @@ class ApplicationViewSet(ModelViewSet):
         qs = super().get_queryset()
         user = self.request.user
 
-        # print(self.request.user.roles.all())    # Know who's accessing
-
         if user.has_role(Roles.SUPER_ADMIN):
             return qs
         elif user.has_role(Roles.ADMIN):

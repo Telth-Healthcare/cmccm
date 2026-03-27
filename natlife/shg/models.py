@@ -9,6 +9,7 @@ from .constants import (
     MaritalStatus,
     BloodGroup,
     DocumentType,
+    DocumentStatus,
     RegistrationStatus
 )
 
@@ -71,13 +72,6 @@ class Document(models.Model):
         related_name="documents"
     )
 
-    uploaded_by = models.ForeignKey(
-        AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name="uploaded_documents",
-        null=True
-    )
-
     document_type = models.CharField(
         max_length=100,
         choices=DocumentType.choices,
@@ -89,7 +83,11 @@ class Document(models.Model):
         validators=[FileSizeValidator(5)]
     )
 
-    is_approved = models.BooleanField(default=False)
+    status = models.CharField(
+        max_length=50,
+        choices=DocumentStatus.choices,
+        default=DocumentStatus.PENDING
+    )
 
     uploaded_at = models.DateTimeField(auto_now_add=True)
 

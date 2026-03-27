@@ -1,14 +1,14 @@
 from rest_framework import serializers
 
 from django.contrib.auth.password_validation import validate_password
-from django.utils import timezone
 from django.conf import settings
-from django.db.models import Q
+from django.db.models import Q, Exists, OuterRef
+
+from allauth.account.models import EmailAddress
 
 from core.constants import Roles
 
-from .services import AccountServices
-from .models import Role, User, Region, Pincode, Invitation
+from .models import Role, User, Region, Pincode
 
 
 INVITATION_TTL = getattr(settings, "INVITATION_TTL", 7)
@@ -100,129 +100,150 @@ class SendInviteSerializer(serializers.ModelSerializer):
     )
     region_name = serializers.CharField(source="region.name", read_only=True)
 
+    # Forbidden roles for invite (used in both validate_roles and _validate_permissions)
+    UNINVITABLE_ROLES: frozenset[str] = frozenset({Roles.SUPER_ADMIN, Roles.CM, Roles.CCM})
+    MANAGER_REQUIRED_ROLES: frozenset[str] = frozenset({Roles.TRAINER, Roles.FINANCIER})
+
     class Meta:
-        model = Invitation
-        exclude = ["token", "invited_by", "created_at"]
-        read_only_fields = [
-            "invited_by",
-            "is_sent",
-            "accepted",
-            "expires_at",
-            "created_at",
+        model = User
+        fields = [
+            "first_name",
+            "last_name",
+            "email",
+            "phone",
+            "roles",
+            "region",
+            "manager",
+            "region_name",
         ]
+        extra_kwargs = {
+            "first_name": {"required": True, "allow_blank": False},
+            "last_name": {"required": True, "allow_blank": False},
+            "email": {"required": True, "allow_blank": False},
+            "phone": {"required": True, "allow_blank": False},
+            "roles": {"required": True},
+        }
 
     # -------------------------
-    # VALIDATION
+    # FIELD-LEVEL VALIDATION
     # -------------------------
 
-    def validate(self, attrs: dict):
-        request = self.context["request"]
-        inviter: User = request.user
+    def validate_email(self, value: str) -> str:
+        return value.lower() if value else value
 
-        email = attrs.get("email")
-        phone = attrs.get("phone")
-        region = attrs.get("region")
-        roles = attrs.get("roles", [])
-
-        role_names = {r.name for r in roles}
-
-        self._validate_duplicates(email, phone, region)
-        self._validate_permissions(inviter, role_names, attrs)
-
-        return attrs
-
-    def validate_region(self, value: Region):
+    def validate_region(self, value: Region) -> Region:
         if value and value.admin:
             raise serializers.ValidationError("Region already has an admin.")
         return value
 
-    def validate_manager(self, value: User):
+    def validate_manager(self, value: User) -> User:
         if value and not value.has_role(Roles.ADMIN):
-            raise serializers.ValidationError(f"'{value.get_full_name()}' cannot be a manager.")
+            raise serializers.ValidationError(
+                f"'{value.get_full_name()}' cannot be a manager."
+            )
         return value
+
+    def validate_roles(self, value: list[Role]) -> list[Role]:
+        forbidden = {r.name for r in value} & self.UNINVITABLE_ROLES
+        if forbidden:
+            raise serializers.ValidationError(
+                f"Cannot invite role(s): {', '.join(forbidden)}."
+            )
+        return value
+
+    # -------------------------
+    # OBJECT-LEVEL VALIDATION
+    # -------------------------
+
+    def validate(self, attrs: dict) -> dict:
+        inviter: User = self.context["request"].user
+        role_names: frozenset[str] = frozenset(r.name for r in attrs.get("roles", []))
+
+        self._validate_duplicates(
+            email=attrs.get("email"),
+            phone=attrs.get("phone"),
+        )
+        self._validate_permissions(inviter, role_names, attrs)
+
+        return attrs
 
     # -------------------------
     # HELPERS
     # -------------------------
 
-    def _validate_duplicates(self, email, phone, region):
-        filters = Q()
+    @staticmethod
+    def _raise(field: str, message: str) -> None:
+        """Shorthand for raising a field-level ValidationError."""
+        raise serializers.ValidationError({field: message})
 
+    def _validate_duplicates(
+        self,
+        email: str | None,
+        phone: str | None,
+    ) -> None:
+        """
+        Single DB round-trip to check email/phone uniqueness,
+        then one extra query only if region is provided.
+        """
+        filters = Q()
         if email:
             filters |= Q(email=email)
         if phone:
             filters |= Q(phone=phone)
 
-        qs = Invitation.objects.filter(filters)
-
-        if qs.exists():
-            if qs.filter(email=email, accepted=False).exists():
-                raise serializers.ValidationError(
-                    {"email": "Pending invitation exists for this email."}
-                )
-
-            if qs.filter(phone=phone, accepted=False).exists():
-                raise serializers.ValidationError(
-                    {"phone": "Pending invitation exists for this phone."}
-                )
-
-            if qs.filter(email=email).exists():
-                raise serializers.ValidationError(
-                    {"email": "Invitation already exists for this email."}
-                )
-
-            if qs.filter(phone=phone).exists():
-                raise serializers.ValidationError(
-                    {"phone": "Invitation already exists for this phone."}
-                )
-
-        if region and Invitation.objects.filter(region=region).exists():
-            raise serializers.ValidationError(
-                {"region": "Invitation already exists for this region."}
+        if filters:
+            # Annotate verified status in one query instead of four
+            conflicts = (
+                User.objects.filter(filters)
+                .annotate(is_verified=Exists(
+                    EmailAddress.objects.filter(
+                        user=OuterRef("pk"),
+                        verified=True,
+                    )
+                ))
+                .values("email", "phone", "is_verified")
             )
 
-    def _validate_permissions(self, inviter: User, role_names, attrs: dict):
+            for row in conflicts:
+                verified: bool = row["is_verified"]
+                status: str = "already exists" if verified else "pending invitation exists"
 
-        is_super_admin = inviter.has_role(Roles.SUPER_ADMIN)
-        is_admin = inviter.has_role(Roles.ADMIN)
+                if email and row["email"] == email:
+                    self._raise("email", f"An invitation {status} for this email.")
+                if phone and row["phone"] == phone:
+                    self._raise("phone", f"An invitation {status} for this phone.")
 
-        # SUPER ADMIN
-        if is_super_admin:
+    def _validate_permissions(
+        self,
+        inviter: User,
+        role_names: frozenset[str],
+        attrs: dict,
+    ) -> None:
+        """Mutates attrs in-place to enforce role/region/manager rules per inviter."""
 
+        # --- SUPER ADMIN ---
+        if inviter.has_role(Roles.SUPER_ADMIN):
             if Roles.SUPER_ADMIN in role_names:
-                raise serializers.ValidationError(
-                    {"roles": "Cannot invite another super admin."}
-                )
+                self._raise("roles", "Cannot invite another super admin.")
 
             if Roles.ADMIN in role_names:
                 attrs["manager"] = None
                 if not attrs.get("region"):
-                    raise serializers.ValidationError(
-                        {"region": "Admin must have a region."}
-                    )
+                    self._raise("region", "Admin must have a region.")
                 return
 
-            if role_names & {Roles.TRAINER, Roles.FINANCIER}:
+            if role_names & self.MANAGER_REQUIRED_ROLES:
                 if not attrs.get("manager"):
-                    raise serializers.ValidationError(
-                        {"manager": "Trainer/Financier require a manager."}
-                    )
+                    self._raise("manager", "Trainer/Financier require a manager.")
                 return
 
-            if role_names & {Roles.CM, Roles.CCM}:
-                raise serializers.ValidationError(
-                    {"roles": "CM and CCM cannot be invited."}
-                )
-
+            # CM / CCM already blocked in validate_roles; nothing else to check
             return
 
-        # ADMIN
-        if is_admin:
-
+        # --- ADMIN ---
+        if inviter.has_role(Roles.ADMIN):
             if Roles.ADMIN in role_names:
-                raise serializers.ValidationError(
-                    {"roles": "Admin cannot invite another admin."}
-                )
+                self._raise("roles", "Admin cannot invite another admin.")
 
             attrs["manager"] = inviter
             attrs["region"] = inviter.region
@@ -234,45 +255,36 @@ class SendInviteSerializer(serializers.ModelSerializer):
     # CREATE
     # -------------------------
 
-    def create(self, validated_data: dict):
-
-        request = self.context["request"]
-        inviter: User = request.user
-
+    def create(self, validated_data: dict) -> User:
         roles: list[Role] = validated_data.pop("roles")
-        role_names = {r.name for r in roles}
+        role_names: frozenset[str] = frozenset(r.name for r in roles)
 
+        # Inherit manager's region for Trainer/Financier in one conditional
         manager: User = validated_data.get("manager")
-
-        if (
-            role_names & {Roles.TRAINER, Roles.FINANCIER}
-            and not validated_data.get("region")
-            and manager
-        ):
+        if manager and role_names & self.MANAGER_REQUIRED_ROLES:
             validated_data["region"] = manager.region
 
-        invitation = Invitation.objects.create(
-            **validated_data,
-            invited_by=inviter,
-            expires_at=timezone.now() + INVITATION_TTL,
+        user: User = super().create(validated_data)
+        user.roles.set(roles)
+
+        # get_or_create avoids a double-insert race; send confirmation in one step
+        email_address, _ = EmailAddress.objects.get_or_create(
+            user=user,
+            email=user.email,
+            defaults={"verified": False},
         )
+        email_address.send_confirmation()
 
-        invitation.roles.set(roles)
+        return user
 
-        # Send email before saving is_sent
-        invitation.is_sent = AccountServices.send_invitation(request, invitation)
-        invitation.save(update_fields=["is_sent"])
-
-        return invitation
 
 class AcceptInviteSerializer(serializers.Serializer):
 
-    token = serializers.UUIDField()
+    token = serializers.CharField(required=True)
     password = serializers.CharField(
         write_only=True,
         validators=[validate_password]
     )
-
 
 class FirebaseLoginSerializer(serializers.Serializer):
     token = serializers.CharField(required=True)

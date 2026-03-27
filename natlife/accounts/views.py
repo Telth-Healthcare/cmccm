@@ -1,18 +1,22 @@
 from django.conf import settings
-from django.utils import timezone
 from django.db import transaction
 
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.views import APIView
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.exceptions import ValidationError
-from rest_framework.status import HTTP_429_TOO_MANY_REQUESTS
 from rest_framework.filters import OrderingFilter
+from rest_framework.status import (
+    HTTP_429_TOO_MANY_REQUESTS,
+    HTTP_200_OK,
+    HTTP_201_CREATED,
+    HTTP_400_BAD_REQUEST,
+)
 
 from allauth.account.adapter import get_adapter
 from allauth.headless import app_settings as headless_settings
 from allauth.headless.tokens.strategies.jwt.strategy import JWTTokenStrategy
+from allauth.account.models import EmailConfirmationHMAC
 
 from firebase_admin import auth
 
@@ -170,17 +174,25 @@ class FirebaseLoginAPIView(APIView):
             decoded_token: dict = auth.verify_id_token(token)
             phone_number = decoded_token.get("phone_number")
         except Exception as e:
-            print(e)
-            return Response({"detail": "Invalid token."}, status=400)
+            return Response(
+                {"detail": "Invalid token.", "error": str(e)},
+                status=HTTP_400_BAD_REQUEST
+            )
 
         if not phone_number:
-            return Response({"detail": "No phone number in token."}, status=400)
+            return Response(
+                {"detail": "No phone number in token."},
+                status=HTTP_400_BAD_REQUEST
+            )
 
         adapter: CustomAccountAdapter = get_adapter()
         user = adapter.get_user_by_phone(phone_number)
 
         if not user:
-            return Response({"detail": "User not found."}, status=404)
+            return Response(
+                {"detail": "User not found."},
+                status=HTTP_400_BAD_REQUEST
+            )
 
         adapter.set_phone_verified(user, phone_number)
         adapter.login(request, user)
@@ -189,7 +201,7 @@ class FirebaseLoginAPIView(APIView):
         token_payload = strategy.create_access_token_payload(request)
 
         return Response({
-            "status": 200,
+            "status": HTTP_200_OK,
             "data": {
                 "user": CustomHeadlessAdapter(request=request).serialize_user(user),
                 "methods": [
@@ -231,7 +243,7 @@ class SendInviteAPIView(APIView):
         serializer.save()
 
         return Response({
-            "status": 201,
+            "status": HTTP_201_CREATED,
             "count": len(serializer.validated_data),
             "data": serializer.data,
         })
@@ -242,7 +254,6 @@ class SendInviteAPIView(APIView):
 # ─────────────────────────────────────────────
 
 class AcceptInviteAPIView(APIView):
-
     permission_classes = []
 
     @transaction.atomic
@@ -254,51 +265,33 @@ class AcceptInviteAPIView(APIView):
         token = serializer.validated_data["token"]
         password = serializer.validated_data["password"]
 
-        invite = Invitation.objects.filter(
-            token=token,
-            accepted=False
-        ).prefetch_related("roles").first()
+        confirmation = self.get_confirmation(token)
+        if not confirmation:
+            return Response({"token": "Invalid or expired token."}, status=400)
 
-        if not invite:
-            raise ValidationError("Invalid invitation.")
+        email_address = confirmation.email_address
+        user: User = email_address.user
 
-        if invite.expires_at < timezone.now():
-            raise ValidationError("Invitation expired.")
+        confirmation.confirm(request)
 
-        # Prevent duplicate users
-        if User.objects.filter(phone=invite.phone).exists():
-            raise ValidationError("User already exists.")
-        
-        user_data = {
-            "first_name": invite.first_name,
-            "last_name": invite.last_name,
-            "email": invite.email,
-            "phone": invite.phone,
-            "region": invite.region,
-            "manager": invite.manager,
-            "created_by": invite.invited_by,
-            "phone_verified": True,
-            "is_active": True,
-        }
+        adapter: CustomAccountAdapter = get_adapter()
+        adapter.set_password(user, password)
+        adapter.set_phone_verified(user, user.phone)
+        adapter.set_is_active(user, True)
 
-        user = User.objects.create(**user_data)
-        user.set_password(password)
-        user.save()
+        if user.has_role(Roles.ADMIN):
+            region = Region.objects.filter(pk=user.region.pk).first()
+            if region:
+                region.admin = user
+                region.save(update_fields=["admin"])
 
-        user.roles.set(invite.roles.all())
-
-        region = Region.objects.filter(pk=invite.region.pk).first()
-        if region:
-            region.admin = user
-            region.save(update_fields=["admin"])
-
-        invite.accepted = True
-        invite.save(update_fields=["accepted"])
 
         redirect_url = getattr(settings, "HEADLESS_FRONTEND_URLS", {}).get("admin_login_url")
-
         return Response({"detail": "Invitation accepted", "redirect_url": redirect_url})
 
+
+    def get_confirmation(self, confirmation_key):
+        return EmailConfirmationHMAC.from_key(confirmation_key)
 
 
 class JSONRateLimitView(APIView):

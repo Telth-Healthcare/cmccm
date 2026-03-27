@@ -2,16 +2,16 @@ from django.db import models
 
 
 class Gender(models.TextChoices):
-    MALE = "Male"
-    FEMALE = "Female"
-    OTHER = "Other"
+    MALE = "male"
+    FEMALE = "female"
+    OTHER = "other"
 
 
 class MaritalStatus(models.TextChoices):
-    SINGLE = "Single"
-    MARRIED = "Married"
-    DIVORCED = "Divorced"
-    WIDOWED = "Widowed"
+    SINGLE = "single"
+    MARRIED = "married"
+    DIVORCED = "divorced"
+    WIDOWED = "widowed"
 
 
 class BloodGroup(models.TextChoices):
@@ -37,7 +37,14 @@ class DocumentType(models.TextChoices):
     OTHER = "other"
 
 
+class DocumentStatus(models.TextChoices):
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+    REUPLOADED = "reuploaded"
+
+
 class RegistrationStatus(models.TextChoices):
-    REGISTERED = "Registered"
-    UNREGISTERED = "Unregistered"
-    IN_PROCESS = "In Process"
+    REGISTERED = "registered"
+    UNREGISTERED = "unregistered"
+    IN_PROCESS = "in_process"
