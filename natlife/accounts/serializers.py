@@ -50,6 +50,7 @@ class UserSerializer(serializers.ModelSerializer):
         required=True
     )
     has_password = serializers.SerializerMethodField(read_only=True)
+    invite_accepted = serializers.SerializerMethodField(read_only=True)
 
 
     class Meta:
@@ -68,6 +69,9 @@ class UserSerializer(serializers.ModelSerializer):
             "email": {"required": True, "allow_blank": False},
             "region": {"required": True},
         }
+    
+    def get_invite_accepted(self, obj: User):
+        return obj.emailaddress_set.filter(verified=True).exists()
 
     def create(self, validated_data: dict):
         try:
