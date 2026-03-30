@@ -28,10 +28,10 @@ LOCAL_APPS = [
     "core",
     "accounts",
     "shg",
+    "trainer",
     "applications",
     "admin_panel",
     "website",
-    "trainer",
 ]
 
 

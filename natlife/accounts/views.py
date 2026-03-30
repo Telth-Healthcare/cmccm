@@ -25,7 +25,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from core.permissions import RoleBasedPermission
 from core.constants import Roles
 
-from .models import User, Role, Region, Invitation
+from .models import User, Role, Region
 from .serializers import (
     RegionSerializer,
     UserSerializer,
@@ -66,37 +66,6 @@ class RegionViewSet(ModelViewSet):
 
 
 # ─────────────────────────────────────────────
-# Invitations
-# ─────────────────────────────────────────────
-
-class InvitationViewSet(ModelViewSet):
-
-    queryset = Invitation.objects.all()
-    serializer_class = SendInviteSerializer
-    permission_classes = [RoleBasedPermission]
-    role_permissions = {
-        "list": [Roles.SUPER_ADMIN, Roles.ADMIN],
-        "retrieve": [Roles.SUPER_ADMIN, Roles.ADMIN],
-        "create": [],
-        "update": [],
-        "partial_update": [],
-        "destroy": [],
-    }
-
-    def get_queryset(self):
-        qs = super().get_queryset()
-        user = self.request.user
-
-        if user.has_role(Roles.SUPER_ADMIN):
-            return qs
-
-        if user.has_role(Roles.ADMIN):
-            return qs.filter(invited_by=user)
-
-        return qs.none()
-
-
-# ─────────────────────────────────────────────
 # Users
 # ─────────────────────────────────────────────
 
@@ -113,8 +82,8 @@ class UserViewSet(ModelViewSet):
     permission_classes = [RoleBasedPermission]
 
     role_permissions = {
-        "list": [Roles.SUPER_ADMIN, Roles.ADMIN],
-        "retrieve": [Roles.SUPER_ADMIN, Roles.ADMIN],
+        "list": [Roles.SUPER_ADMIN, Roles.ADMIN, Roles.TRAINER],
+        "retrieve": [Roles.SUPER_ADMIN, Roles.ADMIN, Roles.TRAINER],
         "create": [Roles.SUPER_ADMIN, Roles.ADMIN],
         "update": [Roles.SUPER_ADMIN, Roles.ADMIN],
         "partial_update": [Roles.SUPER_ADMIN, Roles.ADMIN],
@@ -142,14 +111,21 @@ class UserViewSet(ModelViewSet):
 
         if user.has_role(Roles.SUPER_ADMIN):
             return qs
-
-        if user.has_role(Roles.ADMIN):
+        elif user.has_role(Roles.ADMIN):
             return qs.filter(
                 region=user.region
             ).exclude(
                 roles__in=user.roles.all()
             ).exclude(
                 region__isnull=True
+            )
+        elif user.has_role(Roles.TRAINER):
+            return qs.filter(
+                roles__in=[
+                    r.pk
+                    for r in Role.objects.filter(name__in=[Roles.CM, Roles.CCM])
+                ],
+                region=user.region
             )
 
         return qs.none()

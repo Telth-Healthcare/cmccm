@@ -4,7 +4,6 @@ from rest_framework.routers import DefaultRouter
 
 from .views import (
     RegionViewSet,
-    InvitationViewSet,
     UserViewSet,
     SendInviteAPIView,
     AcceptInviteAPIView,
@@ -16,7 +15,6 @@ from .views import (
 router = DefaultRouter()
 router.register("users", UserViewSet)
 router.register("regions", RegionViewSet)
-router.register("invitations", InvitationViewSet)
 
 
 urlpatterns = [
