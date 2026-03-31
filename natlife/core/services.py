@@ -13,7 +13,6 @@ from anymail.exceptions import AnymailRequestsAPIError
 
 
 from .models import ActivityLog
-from .constants import Roles
 from .serializers import EmailSerializer
 
 EMAIL_HOST_USER = getattr(settings, "EMAIL_HOST_USER")
@@ -69,6 +68,30 @@ class CoreService:
             return True
         except AnymailRequestsAPIError:
             return False
+
+    @staticmethod
+    def get_constants(module_path: str) -> dict:
+        module = importlib.import_module(module_path)
+
+        text_choices_classes = {
+            name: cls
+            for name, cls in inspect.getmembers(module, inspect.isclass)
+            if issubclass(cls, models.TextChoices)
+            and cls.__module__ == module_path
+        }
+
+        response_data = {}
+
+        for name, cls in text_choices_classes.items():
+            key = ''.join(
+                ['_' + c.lower() if c.isupper() else c for c in name]
+            ).lstrip('_')
+
+            response_data[key] = [
+                {"value": c.value, "label": c.label} for c in cls
+            ]
+
+        return response_data
 
     @staticmethod
     def get_role_constants():

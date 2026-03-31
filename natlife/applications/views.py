@@ -1,11 +1,6 @@
-import importlib
-import inspect
-
-from django.db import models, transaction
+from django.db import transaction
 
 from rest_framework.viewsets import ModelViewSet
-from rest_framework.views import APIView
-from rest_framework.response import Response
 from rest_framework.filters import OrderingFilter
 
 from core.permissions import RoleBasedPermission
@@ -19,24 +14,6 @@ from .services import ApplicationService
 from .serializers import ApplicationSerializer
 
 
-class ApplicationConstantsAPI(APIView):
-    permission_classes = []
-
-    def get(self, request):
-        CONSTANTS_MODULE = "applications.constants"
-        module = importlib.import_module(CONSTANTS_MODULE)
-        text_choices_classes = {
-            name: cls
-            for name, cls in inspect.getmembers(module, inspect.isclass)
-            if issubclass(cls, models.TextChoices) and cls.__module__ == CONSTANTS_MODULE
-        }
-        response_data = {}
-        for name, cls in text_choices_classes.items():
-            key = ''.join(['_' + c.lower() if c.isupper() else c for c in name]).lstrip('_')
-            response_data[key] = [{"value": c.value, "label": c.label} for c in cls]
-        return Response(response_data)
-
-
 class ApplicationViewSet(ModelViewSet):
     queryset = Application.objects.all()
     filter_backends = [OrderingFilter]
@@ -48,6 +25,7 @@ class ApplicationViewSet(ModelViewSet):
         "retrieve": [Roles.SUPER_ADMIN, Roles.ADMIN, Roles.CM, Roles.CCM],
         "create": [Roles.SUPER_ADMIN, Roles.ADMIN, Roles.CM, Roles.CCM],
         "update": [Roles.SUPER_ADMIN],
+        "partial_update": [Roles.ADMIN, Roles.FINANCIER, Roles.TRAINER],
         "destroy": [Roles.SUPER_ADMIN],
     }
 

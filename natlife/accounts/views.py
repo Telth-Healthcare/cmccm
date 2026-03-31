@@ -125,7 +125,7 @@ class UserViewSet(ModelViewSet):
                     r.pk
                     for r in Role.objects.filter(name__in=[Roles.CM, Roles.CCM])
                 ],
-                region=user.region
+                applications__assigned_trainer=user,
             )
 
         return qs.none()

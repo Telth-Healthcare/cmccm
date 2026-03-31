@@ -2,8 +2,9 @@ from django.urls import path, include
 
 from rest_framework.routers import DefaultRouter
 
+from core.views import ConstantsAPIView
+
 from applications.views import (
-    ApplicationConstantsAPI,
     ApplicationViewSet,
 )
 
@@ -12,6 +13,10 @@ router.register("app", ApplicationViewSet)
 
 
 urlpatterns = [
-    path("constants/", ApplicationConstantsAPI.as_view(), name="application-constants"),
+    path(
+        "constants/", 
+        ConstantsAPIView.as_view(constants_module="applications.constants"), 
+        name="application-constants"
+    ),
     path("", include(router.urls)),
 ]
