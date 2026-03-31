@@ -1,8 +1,3 @@
-import importlib
-import inspect
-
-from django.db import models
-
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.response import Response
@@ -14,69 +9,68 @@ from .models import (
     Profile,
     Group,
     Course,
+    CourseCompletion,
     Subject,
     CourseEnrollment,
     SubjectMaterial,
+    MaterialCompletion,
 )
 from .serializers import (
     ProfileSerializer,
     CourseSerializer,
+    CourseCompletionSerializer,
     SubjectSerializer,
     SubjectMaterialSerializer,
+    MaterialCompletionSerializer,
     CourseEnrollmentSerializer,
     GroupEnrollmentSerializer,
     GroupSerializer,
 )
 
 
-class TrainerConstantsAPI(APIView):
-    permission_classes = []
-
-    def get(self, request):
-        CONSTANTS_MODULE = "trainer.constants"
-        module = importlib.import_module(CONSTANTS_MODULE)
-        text_choices_classes = {
-            name: cls
-            for name, cls in inspect.getmembers(module, inspect.isclass)
-            if issubclass(cls, models.TextChoices) and cls.__module__ == CONSTANTS_MODULE
-        }
-        response_data = {}
-        for name, cls in text_choices_classes.items():
-            key = ''.join(['_' + c.lower() if c.isupper() else c for c in name]).lstrip('_')
-            response_data[key] = [{"value": c.value, "label": c.label} for c in cls]
-        return Response(response_data)
-
 class RoleFilteredQuerysetMixin:
     """
-    Reusable mixin to filter queryset based on user role.
+    Filters querysets based on the requesting user's role.
+
+    Usage: define any of the filter methods below in your ViewSet.
+    Each method receives the requesting user and must return a dict
+    of filter kwargs to apply to the queryset.
+
+    Example:
+        def admin_filter(self, user):
+            return {"created_by__region": user.region}
+
+        def trainer_filter(self, user):
+            return {"created_by": user}
     """
 
-    # Override this in child classes
-    admin_filter = None
-    trainer_filter = None
-    partner_filter = None
+    def admin_filter(self, user) -> dict | None:
+        return None
+
+    def trainer_filter(self, user) -> dict | None:
+        return None
+
+    def partner_filter(self, user) -> dict | None:
+        return None
 
     def get_queryset(self):
         qs = super().get_queryset()
         user = self.request.user
 
-        if user.has_role(Roles.SUPER_ADMIN):
-            return qs
+        role_filter_map = [
+            (Roles.SUPER_ADMIN, None),
+            (Roles.ADMIN, self.admin_filter),
+            (Roles.TRAINER, self.trainer_filter),
+            (Roles.CM, self.partner_filter),
+            (Roles.CCM, self.partner_filter),
+        ]
 
-        if user.has_role(Roles.ADMIN):
-            if not self.admin_filter:
-                return qs.none()
-            return qs.filter(**self.admin_filter(user))
-
-        if user.has_role(Roles.TRAINER):
-            if not self.trainer_filter:
-                return qs.none()
-            return qs.filter(**self.trainer_filter(user))
-        
-        if user.has_role(Roles.CM) or user.has_role(Roles.CCM):
-            if not self.partner_filter:
-                return qs.none()
-            return qs.filter(**self.partner_filter(user))
+        for role, filter_fn in role_filter_map:
+            if user.has_role(role):
+                if filter_fn is None:
+                    return qs  # SUPER_ADMIN: unfiltered
+                filters = filter_fn(user)
+                return qs.filter(**filters).distinct() if filters else qs.none()
 
         return qs.none()
 
@@ -95,8 +89,11 @@ class ProfileViewSet(RoleFilteredQuerysetMixin, ModelViewSet):
         "destroy": [],
     }
 
-    admin_filter = lambda self, user: {"user__region": user.region}
-    trainer_filter = lambda self, user: {"user": user}
+    def admin_filter(self, user):
+        return {"user__region": user.region}
+    
+    def trainer_filter(self, user):
+        return {"user": user}
 
 
 class CourseViewSet(RoleFilteredQuerysetMixin, ModelViewSet):
@@ -113,8 +110,29 @@ class CourseViewSet(RoleFilteredQuerysetMixin, ModelViewSet):
         "destroy": []
     }
 
-    admin_filter = lambda self, user: {"created_by__region": user.region}
-    trainer_filter = lambda self, user: {"created_by": user}
+    def admin_filter(self, user):
+        return {"created_by__region": user.region}
+
+    def trainer_filter(self, user):
+        return {"created_by": user}
+
+
+class CourseCompletionViewSet(RoleFilteredQuerysetMixin, ModelViewSet):
+    queryset = CourseCompletion.objects.select_related("user", "course")
+    serializer_class = CourseCompletionSerializer
+    permission_classes = [RoleBasedPermission]
+
+    role_permissions = {
+        "list": [Roles.ADMIN, Roles.TRAINER, Roles.CM, Roles.CCM],
+        "retrieve": [Roles.ADMIN, Roles.TRAINER, Roles.CM, Roles.CCM],
+        "create": [Roles.CM, Roles.CCM],
+        "update": [],
+        "partial_update": [],
+        "destroy": [],
+    }
+
+    def partner_filter(self, user):
+        return {"user": user}
 
 
 class SubjectViewSet(RoleFilteredQuerysetMixin, ModelViewSet):
@@ -135,12 +153,11 @@ class SubjectViewSet(RoleFilteredQuerysetMixin, ModelViewSet):
         "destroy": []
     }
 
-    admin_filter = lambda self, user: {
-        "course__created_by__region": user.region
-    }
-    trainer_filter = lambda self, user: {
-        "course__created_by": user
-    }
+    def admin_filter(self, user):
+        return {"course__created_by__region": user.region}
+
+    def trainer_filter(self, user):
+        return {"course__created_by": user}
 
 
 class SubjectMaterialViewSet(RoleFilteredQuerysetMixin, ModelViewSet):
@@ -149,33 +166,12 @@ class SubjectMaterialViewSet(RoleFilteredQuerysetMixin, ModelViewSet):
         "subject__course",
         "subject__course__created_by",
         "subject__course__created_by__region"
-    )
+    ).distinct()
     serializer_class = SubjectMaterialSerializer
     permission_classes = [RoleBasedPermission]
 
     role_permissions = {
-        "list": [Roles.ADMIN, Roles.TRAINER],
-        "retrieve": [Roles.ADMIN, Roles.TRAINER],
-        "create": [Roles.ADMIN, Roles.TRAINER],
-        "update": [Roles.ADMIN, Roles.TRAINER],
-        "partial_update": [Roles.ADMIN, Roles.TRAINER],
-        "destroy": []
-    }
-
-    admin_filter = lambda self, user: {
-        "subject__course__created_by__region": user.region
-    }
-    trainer_filter = lambda self, user: {
-        "subject__course__created_by": user
-    }
-
-
-class CourseEnrollmentViewSet(RoleFilteredQuerysetMixin, ModelViewSet):
-    queryset = CourseEnrollment.objects.all()
-    serializer_class = CourseEnrollmentSerializer
-    permission_classes = [RoleBasedPermission]
-    role_permissions = {
-        "list": [Roles.ADMIN, Roles.CM, Roles.CCM],
+        "list": [Roles.ADMIN, Roles.TRAINER, Roles.CM, Roles.CCM],
         "retrieve": [Roles.ADMIN, Roles.TRAINER, Roles.CM, Roles.CCM],
         "create": [Roles.ADMIN, Roles.TRAINER],
         "update": [Roles.ADMIN, Roles.TRAINER],
@@ -183,10 +179,59 @@ class CourseEnrollmentViewSet(RoleFilteredQuerysetMixin, ModelViewSet):
         "destroy": []
     }
 
-    partner_filter = lambda self, user: {"user": user}
+    def admin_filter(self, user):
+        return {"subject__course__created_by__region": user.region}
+
+    def trainer_filter(self, user):
+        return {"subject__course__created_by": user}
+    
+    def partner_filter(self, user):
+        return {"subject__course__enrollments__user": user}
 
 
-class GroupViewSet(ModelViewSet):
+class MaterialCompletionViewSet(ModelViewSet):
+    queryset = MaterialCompletion.objects.all()
+    serializer_class = MaterialCompletionSerializer
+    permission_classes = [RoleBasedPermission]
+
+    role_permissions = {
+        "list": [Roles.CM, Roles.CCM],
+        "retrieve": [Roles.CM, Roles.CCM],
+        "create": [Roles.CM, Roles.CCM],
+        "destroy": [Roles.CM, Roles.CCM],
+        "update": [],
+        "partial_update": [],
+    }
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        # Users only ever see their own completion records
+        return qs.filter(
+            user=self.request.user
+        ).select_related("material")
+
+
+class CourseEnrollmentViewSet(RoleFilteredQuerysetMixin, ModelViewSet):
+    queryset = CourseEnrollment.objects.all()
+    serializer_class = CourseEnrollmentSerializer
+    permission_classes = [RoleBasedPermission]
+    role_permissions = {
+        "list": [Roles.ADMIN, Roles.TRAINER, Roles.CM, Roles.CCM],
+        "retrieve": [Roles.ADMIN, Roles.TRAINER, Roles.CM, Roles.CCM],
+        "create": [Roles.ADMIN, Roles.TRAINER],
+        "update": [Roles.ADMIN, Roles.TRAINER],
+        "partial_update": [Roles.ADMIN, Roles.TRAINER],
+        "destroy": []
+    }
+
+    def trainer_filter(self, user):
+        return {"user__applications__assigned_trainer": user}
+    
+    def partner_filter(self, user):
+        return {"user": user}
+
+
+class GroupViewSet(RoleFilteredQuerysetMixin, ModelViewSet):
     queryset = Group.objects.all().order_by("name")
     serializer_class = GroupSerializer
     permission_classes = [RoleBasedPermission]
@@ -198,6 +243,9 @@ class GroupViewSet(ModelViewSet):
         "partial_update": [Roles.TRAINER],
         "destroy": [Roles.TRAINER]
     }
+
+    def trainer_filter(self, user):
+        return {"created_by": user}
 
 
 class GroupEnrollmentView(APIView):
