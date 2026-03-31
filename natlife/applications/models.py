@@ -1,6 +1,12 @@
 from django.db import models
 from django.conf import settings
 
+from trainer.models import (
+    MaterialCompletion,
+    CourseEnrollment,
+    CourseCompletion,
+)
+
 from .constants import ApplicationStatus, PaymentClearance
 
 
@@ -56,3 +62,24 @@ class Application(models.Model):
 
     def __str__(self):
         return f"{self.reference_number} - {self.status}"
+
+    def get_enrollments(self):
+        return CourseEnrollment.objects.filter(user=self.user)
+
+    def get_subject_materials_completions(self):
+        return MaterialCompletion.objects.filter(user=self.user)
+
+    def get_course_completions(self):
+        return CourseCompletion.objects.filter(user=self.user)
+
+    def is_eligible_for_production(self):
+        enrollments = self.get_enrollments()
+        completed_courses = self.get_course_completions()
+
+        if not enrollments.exists() or not completed_courses.exists():
+            return False
+        
+        return enrollments.count() == completed_courses.count()
+
+    class Meta:
+        ordering = ["-created_at"]

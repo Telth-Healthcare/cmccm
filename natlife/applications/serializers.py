@@ -1,5 +1,7 @@
 from rest_framework.serializers import ModelSerializer, SerializerMethodField, ValidationError
 
+from core.constants import Roles
+
 from .models import Application
 from .services import ApplicationService
 from .constants import ApplicationStatus
@@ -40,12 +42,22 @@ class ApplicationSerializer(ModelSerializer):
             "updated_at",
         ]
 
+    def validate(self, attrs: dict):
+        user = self.context.get("request").user
+        if user.has_role(Roles.TRAINER):
+            attrs = {"status": attrs.get("status", ApplicationStatus.TRAINING)}
+        return super().validate(attrs)
+
     def create(self, validated_data):
         validated_data["reference_number"] = ApplicationService.generate_reference_number()
         return super().create(validated_data)
     
     def validate_status(self, value):
-        current_status = self.instance.status
+        if not self.instance:
+            return value
+
+        instance: Application = self.instance
+        current_status = instance.status
         if current_status == value:
             return value
 
@@ -53,6 +65,10 @@ class ApplicationSerializer(ModelSerializer):
 
         if value not in allowed:
             raise ValidationError(f"Cannot transition from {current_status} to {value}")
+    
+        is_eligible = instance.is_eligible_for_production()
+        if value == ApplicationStatus.PRODUCTION and not is_eligible:
+            raise ValidationError("Application is not eligible for production")
 
         return value
 
