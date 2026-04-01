@@ -36,7 +36,10 @@ class ApplicationViewSet(ModelViewSet):
         if user.has_role(Roles.SUPER_ADMIN):
             return qs
         elif user.has_role(Roles.ADMIN):
-            return qs
+            return qs.filter(
+                user__region=user.region,
+                user__is_active=True,
+            )
         elif user.has_role(Roles.FINANCIER):
             """
             Fianacier should see applications assigned only to them

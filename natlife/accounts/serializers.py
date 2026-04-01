@@ -30,15 +30,49 @@ class RegionSerializer(serializers.ModelSerializer):
         model = Region
         fields = "__all__"
 
+    def _sync_pincodes_and_users(self, region, pincodes: list[dict]):
+        """Create pincodes and bulk-update users whose SHG pin code matches."""
+        pincode_dataset = [
+            {"region": region.id, "code": pincode.get("code")}
+            for pincode in pincodes
+        ]
+        pincode_serializer = PincodeSerializer(data=pincode_dataset, many=True)
+        pincode_serializer.is_valid(raise_exception=True)
+        pincode_serializer.save()
+
+        codes = [p["code"] for p in pincode_serializer.validated_data]
+        # Bulk-fetch and bulk-update instead of saving one user at a time
+        users = User.objects.filter(shg__pin_code__in=codes)
+        users.update(region=region)
+
     def create(self, validated_data: dict):
         pincodes: list[dict] = validated_data.pop("pincodes", [])
         region = super().create(validated_data)
-
-        pincode_dataset = [
-            Pincode(region=region, **pincode) for pincode in pincodes
-        ]
-        Pincode.objects.bulk_create(pincode_dataset)
+        self._sync_pincodes_and_users(region, pincodes)
         return region
+
+    def update(self, instance: Region, validated_data: dict):
+        pincodes: list[dict] = validated_data.pop("pincodes", [])
+
+        # Update the Region scalar fields
+        instance = super().update(instance, validated_data)
+
+        # Remove pincodes that are no longer in the payload
+        incoming_codes = {p.get("code") for p in pincodes}
+        instance.pincodes.exclude(code__in=incoming_codes).delete()
+
+        # Determine which codes are genuinely new
+        existing_codes = set(
+            instance.pincodes.values_list("code", flat=True)
+        )
+        new_pincodes = [
+            p for p in pincodes if p.get("code") not in existing_codes
+        ]
+
+        if new_pincodes:
+            self._sync_pincodes_and_users(instance, new_pincodes)
+
+        return instance
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -51,6 +85,8 @@ class UserSerializer(serializers.ModelSerializer):
     )
     has_password = serializers.SerializerMethodField(read_only=True)
     invite_accepted = serializers.SerializerMethodField(read_only=True)
+    region_name = serializers.CharField(source="region.name", read_only=True)
+    manager_name = serializers.CharField(source="manager.get_full_name", read_only=True)
 
 
     class Meta:
@@ -61,25 +97,25 @@ class UserSerializer(serializers.ModelSerializer):
             "user_permissions",
             "is_superuser",
             "is_staff",
+            "is_approved",
+            # "created_at",
+            "updated_at",
+            "created_by",
             "last_login",
         ]
         extra_kwargs = {
             "first_name": {"required": True, "allow_blank": False},
             "last_name": {"required": True, "allow_blank": False},
             "email": {"required": True, "allow_blank": False},
-            "region": {"required": True},
+            "region": {"required": True, "write_only": True},
+            "manager": {"required": False, "write_only": True},
         }
     
     def get_invite_accepted(self, obj: User):
         return obj.emailaddress_set.filter(verified=True).exists()
 
-    def create(self, validated_data: dict):
-        try:
-            validated_data["created_by"] = self.context["request"].user
-        except KeyError:
-            pass
-        finally:
-            return super().create(validated_data)
+    def get_has_password(self, obj: User):
+        return True if obj.password else False
 
     def validate_roles(self, value: list[Role]):
         user: User = self.context["request"].user
@@ -92,9 +128,31 @@ class UserSerializer(serializers.ModelSerializer):
         if value:
             return value.lower()
         return value
+    
+    def validate_manager(self, value: User):
+        if value:
+            if not value.has_role(Roles.ADMIN) or not value.region:
+                raise serializers.ValidationError(
+                    f"'{value.get_full_name()}' cannot be a manager."
+                )
+        return value
 
-    def get_has_password(self, obj: User):
-        return True if obj.password else False
+    def create(self, validated_data: dict):
+        validated_data.update({
+            "created_by": self.context["request"].user
+        })
+        return super().create(validated_data)
+
+    def update(self, instance: User, validated_data: dict):
+        # Assigning region when manager is being assigned
+        if not instance.has_role(Roles.SUPER_ADMIN):
+            manager: User = validated_data.get("manager")
+            if manager:
+                validated_data.update({
+                    "region": manager.region
+                })
+        return super().update(instance, validated_data)
+
 
 class SendInviteSerializer(serializers.ModelSerializer):
     roles = serializers.SlugRelatedField(

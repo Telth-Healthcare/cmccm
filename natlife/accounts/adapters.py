@@ -3,12 +3,15 @@ import requests
 from django.utils.crypto import get_random_string
 from django.conf import settings
 from django.core.cache import cache
+from django.utils import timezone
 
 from rest_framework.authtoken.models import Token
 
 from allauth.account.adapter import DefaultAccountAdapter
 from allauth.headless.adapter import DefaultHeadlessAdapter
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
+from allauth.account.models import EmailConfirmationHMAC
+from allauth.account import app_settings
 
 from .models import User
 from .serializers import UserSerializer
@@ -17,6 +20,8 @@ from .serializers import UserSerializer
 APPLICATIONS_BACKEND_URL = getattr(settings, "APPLICATIONS_URL")
 SHG_BACKEND_URL = getattr(settings, "SHG_URL")
 OTP_TTL = getattr(settings, "ACCOUNT_PHONE_VERIFICATION_TTL")
+EMAIL_VERIFICATION_BY_CODE_ENABLED = getattr(app_settings, "EMAIL_VERIFICATION_BY_CODE_ENABLED")
+EMAIL_CONFIRMATION_EXPIRE_DAYS = getattr(app_settings, "EMAIL_CONFIRMATION_EXPIRE_DAYS")
 
 
 class CustomAccountAdapter(DefaultAccountAdapter):
@@ -27,6 +32,37 @@ class CustomAccountAdapter(DefaultAccountAdapter):
     in verification emails points. By default allauth points to its own
     server-rendered view — we redirect to the SPA instead.
     """
+
+    def send_confirmation_mail(self, request, emailconfirmation: EmailConfirmationHMAC, signup):
+        confirmation_sent_on = emailconfirmation.email_address.user.created_at
+        expiration_date = confirmation_sent_on + timezone.timedelta(days=EMAIL_CONFIRMATION_EXPIRE_DAYS)
+        validity = timezone.timedelta(days=EMAIL_CONFIRMATION_EXPIRE_DAYS)
+
+        ctx = {
+            "user": emailconfirmation.email_address.user,
+            "role": emailconfirmation.email_address.user.roles.first().name,
+            "validity": validity.__str__().split(", ")[0],
+            "expires_on": expiration_date.strftime("%B %d, %Y"),
+            "expires_time": expiration_date.strftime("%I:%M %p")
+        }
+        if EMAIL_VERIFICATION_BY_CODE_ENABLED:
+            ctx.update({"code": emailconfirmation.key})
+        else:
+            ctx.update({
+                "key": emailconfirmation.key,
+                "activate_url": self.get_email_confirmation_url(request, emailconfirmation),
+            })
+        
+        if signup:
+            email_template = "account/email/email_confirmation_signup"
+        else:
+            email_template = "account/email/email_confirmation"
+
+        self.send_mail(
+            email_template,
+            emailconfirmation.email_address.email,
+            context=ctx
+        )
 
     def set_is_active(self, user: User, is_active: bool):
         user.is_active = is_active

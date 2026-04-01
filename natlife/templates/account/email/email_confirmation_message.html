@@ -69,7 +69,7 @@
                 <p style="font-size:16px; color:#333; margin:0 0 10px 0;">Contragulations!</p>
 
                 <p style="font-size:14px; color:#333; line-height:1.5; margin:0 0 20px 0;">
-                    Welcome to Telth Care. You have been invited by the admin of the Telth Care to join as a {{ user.roles.first }}.
+                    Welcome to Telth Care. You have been invited by the admin of the Telth Care to join as a {{ role|default_if_none:user.roles.first.name|capfirst }}.
                     Click below to either accept or reject the invitation.
                 </p>
 
@@ -80,7 +80,7 @@
                     </a>
                 </p>
                 <p style="font-size:13px; color:#8d8d8d; margin:0 0 20px 0;">
-                    This invitation will expire in 3 days.
+                    This invitation will expire in {{ validity }}. On {{ expires_on }} at {{ expires_time }} (UTC).
                 </p>
 
                 <p style="font-size:13px; color:#333; line-height:1.5; margin:0 0 20px 0;">

@@ -2,6 +2,7 @@ from rest_framework import serializers
 
 from accounts.models import Pincode
 from accounts.serializers import UserSerializer
+from core.constants import Roles
 
 from .models import SHG, Document
 
@@ -46,6 +47,11 @@ class CreateSHGSerializer(serializers.ModelSerializer):
             "blood_group",
         ]
         read_only_fields = ["id"]
+    
+    def validate_user(self, user):
+        if user.has_role(Roles.CM) or user.has_role(Roles.CCM):
+            return user
+        raise serializers.ValidationError(f"'{user.roles.first().name}' user cannot register as Partner.")
 
     def create(self, validated_data: dict):
         user = self.context["request"].user
