@@ -31,9 +31,15 @@ class ApplicationService:
     def generate_reference_number():
         year = CoreService.current_year()
 
-        count = Application.objects.filter(
+        last_application = Application.objects.filter(
             created_at__year=year
-        ).count() + 1
+        ).order_by(
+            "-reference_number"
+        ).first()
+        last_ref_no = last_application.reference_number.split(
+            "-"
+        )[-1] if last_application else "0000"
+        count = int(last_ref_no) + 1
 
         return f"CM-{year}-{str(count).zfill(4)}"
 
