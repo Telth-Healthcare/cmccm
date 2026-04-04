@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>MNP Invitation Email | Telth.care</title>
+    <style>
+        /* RESET & GLOBAL FONT — changed to clean, modern system font stack */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background-color: #F5F7FA;
+            padding: 24px 16px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            line-height: 1.5;
+        }
+        /* CSS variables for consistency */
+        :root {
+            --color-background-primary: #ffffff;
+            --color-background-secondary: #F9FAFB;
+            --color-text-primary: #111827;
+            --color-text-secondary: #4B5563;
+            --color-text-tertiary: #6B7280;
+            --color-border-tertiary: #E5E7EB;
+            --border-radius-md: 8px;
+            --border-radius-lg: 16px;
+            --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, Helvetica, Arial, sans-serif;
+        }
+        .email-wrap {
+            max-width: 620px;
+            margin: 0 auto;
+            font-family: var(--font-sans);
+        }
+        .email-card {
+            background: var(--color-background-primary);
+            border: 0.5px solid var(--color-border-tertiary);
+            border-radius: var(--border-radius-lg);
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+        }
+        .email-header {
+            background: #5B2D8E;
+            padding: 36px 40px 28px;
+        }
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 28px;
+        }
+        .brand-name {
+            color: white;
+            font-size: 18px;
+            font-weight: 500;
+            letter-spacing: -0.3px;
+        }
+        .header-badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.18);
+            color: white;
+            font-size: 11px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            margin-bottom: 14px;
+            letter-spacing: 0.5px;
+        }
+        .header-title {
+            color: white;
+            font-size: 22px;
+            font-weight: 500;
+            line-height: 1.35;
+            margin: 0;
+        }
+        .header-sub {
+            color: rgba(255,255,255,0.75);
+            font-size: 14px;
+            margin-top: 8px;
+        }
+        .email-body {
+            padding: 36px 40px;
+        }
+        .greeting {
+            font-size: 15px;
+            color: var(--color-text-primary);
+            margin-bottom: 16px;
+        }
+        .para {
+            font-size: 14px;
+            color: var(--color-text-secondary);
+            line-height: 1.7;
+            margin-bottom: 14px;
+        }
+        .highlight-box {
+            background: #F3EDF9;
+            border-left: 3px solid #5B2D8E;
+            border-radius: 0 var(--border-radius-md) var(--border-radius-md) 0;
+            padding: 14px 18px;
+            margin: 20px 0;
+        }
+        .highlight-box p {
+            font-size: 13px;
+            color: #3E1D66;
+            margin: 0;
+            line-height: 1.6;
+        }
+        .region-card {
+            background: var(--color-background-secondary);
+            border: 0.5px solid var(--color-border-tertiary);
+            border-radius: var(--border-radius-md);
+            padding: 16px 20px;
+            margin: 20px 0;
+        }
+        .region-label {
+            font-size: 11px;
+            color: var(--color-text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            margin-bottom: 6px;
+        }
+        .region-name {
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--color-text-primary);
+        }
+        .steps-title {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--color-text-primary);
+            margin: 24px 0 12px;
+        }
+        .step {
+            display: flex;
+            gap: 14px;
+            align-items: flex-start;
+            margin-bottom: 14px;
+        }
+        .step-num {
+            width: 24px;
+            height: 24px;
+            min-width: 24px;
+            background: #5B2D8E;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        .step-text {
+            font-size: 14px;
+            color: var(--color-text-secondary);
+            line-height: 1.55;
+            padding-top: 2px;
+        }
+        .cta-wrap {
+            text-align: center;
+            margin: 28px 0 24px;
+        }
+        .cta-btn {
+            display: inline-block;
+            background: #5B2D8E;
+            color: white;
+            font-size: 14px;
+            font-weight: 500;
+            padding: 13px 36px;
+            border-radius: var(--border-radius-md);
+            text-decoration: none;
+            letter-spacing: 0.2px;
+            transition: background 0.2s ease;
+        }
+        .cta-btn:hover {
+            background: #4a2373;
+            text-decoration: none;
+        }
+        .cta-note {
+            font-size: 12px;
+            color: var(--color-text-tertiary);
+            margin-top: 10px;
+        }
+        .divider {
+            border: none;
+            border-top: 0.5px solid var(--color-border-tertiary);
+            margin: 24px 0;
+        }
+        .footer {
+            padding: 20px 40px 28px;
+            background: var(--color-background-secondary);
+            border-top: 0.5px solid var(--color-border-tertiary);
+        }
+        .footer-links {
+            display: flex;
+            gap: 24px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .footer-links a {
+            font-size: 12px;
+            color: var(--color-text-secondary);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .footer-links a:hover {
+            color: #5B2D8E;
+            text-decoration: underline;
+        }
+        .footer-fine {
+            font-size: 11px;
+            color: var(--color-text-tertiary);
+            line-height: 1.6;
+        }
+        .expiry-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #FFF3DC;
+            border: 0.5px solid #EF9F27;
+            border-radius: var(--border-radius-md);
+            padding: 8px 14px;
+            font-size: 13px;
+            color: #854F0B;
+        }
+        a {
+            word-break: break-word;
+        }
+        @media (max-width: 550px) {
+            .email-header, .email-body, .footer {
+                padding-left: 24px;
+                padding-right: 24px;
+            }
+            .footer-links {
+                gap: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="email-wrap">
+    <div class="email-card">
+        <div class="email-header">
+            <div class="brand">
+                <span class="brand-name">Telth.care</span>
+            </div>
+            <div class="header-badge">Master Network Partner · Invitation</div>
+            <p class="header-title">Your panel is live.<br>Let's build your network.</p>
+            <p class="header-sub">Activate your access and start building your care network</p>
+        </div>
+
+        <div class="email-body">
+            <p class="greeting">Dear <strong>{{ user.get_full_name }}</strong>,</p>
+
+            <p class="para">We're pleased to inform you that your Master Network Partner (MNP) Admin Panel has been set up and is ready for your access. This panel is your central command for managing your region's Care Managers, hubs, and operations within the Telth P3DSC ecosystem.</p>
+
+            <div class="region-card">
+                <div class="region-label">Your assigned region</div>
+                <div class="region-name">{{ region_name }} &nbsp;·&nbsp; <span style="font-size: 13px; font-weight: 400; color: var(--color-text-secondary);">Phone: {{ user.phone }}</span></div>
+            </div>
+
+            <div class="highlight-box">
+                <p>Through your admin panel, you can onboard and manage Care Managers (CMs) and Community Care Managers (CCMs), track hub activity, monitor performance metrics, and coordinate care delivery across your network.</p>
+            </div>
+
+            <p class="steps-title">Getting started — 3 simple steps</p>
+
+            <div class="step">
+                <div class="step-num">1</div>
+                <div class="step-text"><strong>Accept this invitation</strong> — click the button below to verify your identity and activate your account.</div>
+            </div>
+            <div class="step">
+                <div class="step-num">2</div>
+                <div class="step-text"><strong>Set your password</strong> — you'll be prompted to create a secure password on first login.</div>
+            </div>
+            <div class="step">
+                <div class="step-num">3</div>
+                <div class="step-text"><strong>Explore your panel</strong> — your dashboard, region map, CM onboarding tools, and performance reports are all ready to go.</div>
+            </div>
+
+            <div class="cta-wrap">
+                <!-- invitation link (placeholder) -->
+                <a class="cta-btn" href={{ activate_url }} target="_blank">Accept Invitation &amp; Access Panel</a>
+                <p class="cta-note">Or copy this link: <span style="color: #5B2D8E; font-size: 12px;">{{ activate_url }}</span></p>
+            </div>
+
+            <div style="text-align: center; margin-bottom: 20px;">
+                <div class="expiry-badge">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="8" cy="8" r="6.5" stroke="#EF9F27" stroke-width="1.2"/><path d="M8 5v3.5l2 2" stroke="#EF9F27" stroke-width="1.2" stroke-linecap="round"/></svg>
+                    This invitation link expires in {{ validity }}. On {{ expires_on }} at {{ expires_time }} (UTC).
+                </div>
+            </div>
+
+            <hr class="divider">
+
+            <!-- Updated contact email: support@mytleth.com (replaced original network email) -->
+            <p class="para" style="margin-bottom: 6px;">If you have any questions or need assistance setting up your panel, reach out to your Telth regional coordinator or write to us at <span style="color: #5B2D8E;">support@mytleth.com</span></p>
+            <p class="para">We look forward to building a strong care network in {{ region_name }} with you.</p>
+            <p class="para" style="margin-bottom: 0;">Warm regards,<br><strong>Telth Network Team</strong><br><span style="font-size: 13px; color: var(--color-text-tertiary);">Telth Healthcare Private Limited</span></p>
+        </div>
+
+        <div class="footer">
+            <div class="footer-links">
+                <!-- 1. mytelth.com -> leads to main website -->
+                <a href="https://mytelth.com" target="_blank">mytelth.com</a>
+                <!-- 2. Telth.care -> leads to telth.care homepage -->
+                <a href="https://telth.care" target="_blank">Telth.care</a>
+                <!-- 3. Support -> contact page on mytelth.com (per requirement: "navigate to contact page on mytelth") -->
+                <a href="https://mytelth.com/contact" target="_blank">Support</a>
+                <!-- 4. Privacy Policy link connected to privacy page (assumed privacy route on mytelth) -->
+                <a href="https://mytelth.com/privacy-policy" target="_blank">Privacy Policy</a>
+                <!-- UNSUBSCRIBE LINK REMOVED as requested -->
+            </div>
+            <p class="footer-fine">This email was sent to {{ user.email }} because you have been registered as a Master Network Partner on the Telth platform. Telth Healthcare Private Limited, Nehru Place, New Delhi – 110019. If you believe this was sent in error, please contact <a href="mailto:support@mytleth.com" style="color:#5B2D8E; text-decoration:none;">support@mytleth.com</a>.</p>
+            <p class="footer-fine">DO NOT REPLY TO THIS EMAIL.</p>
+        </div>
+    </div>
+</div>
+</body>
+</html>

@@ -76,6 +76,7 @@ class UserViewSet(ModelViewSet):
         "roles": ["exact"],
         "roles__name": ["exact", "icontains", "in"],
         "manager": ["exact"],
+        "region": ["exact", "isnull"],
     }
     ordering = ["-created_at"]
     serializer_class = UserSerializer

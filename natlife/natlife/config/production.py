@@ -77,3 +77,12 @@ STORAGES = {
 }
 STATIC_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/static/"
 MEDIA_URL  = f"https://{AWS_S3_CUSTOM_DOMAIN}/media/"
+
+
+# ------------------------------------------------------------------------------
+# HEADLESS FRONTEND URLS
+# ------------------------------------------------------------------------------
+FRONTEND_BASE_URL = os.getenv("FRONTEND_BASE_URL")
+if not FRONTEND_BASE_URL:
+    raise Exception("FRONTEND_BASE_URL is not set")
+HEADLESS_FRONTEND_URLS = build_headless_frontend_urls(FRONTEND_BASE_URL)

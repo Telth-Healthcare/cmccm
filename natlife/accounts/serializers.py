@@ -1,17 +1,14 @@
 from rest_framework import serializers
 
 from django.contrib.auth.password_validation import validate_password
-from django.conf import settings
 from django.db.models import Q, Exists, OuterRef
+from django.db import transaction
 
 from allauth.account.models import EmailAddress
 
 from core.constants import Roles
 
 from .models import Role, User, Region, Pincode
-
-
-INVITATION_TTL = getattr(settings, "INVITATION_TTL", 7)
 
 
 class PincodeSerializer(serializers.ModelSerializer):
@@ -22,55 +19,69 @@ class PincodeSerializer(serializers.ModelSerializer):
             "region": {"required": False}
         }
 
+class PincodeValidationSerializer(serializers.Serializer):
+    code = serializers.CharField(required=True)
+
 
 class RegionSerializer(serializers.ModelSerializer):
-    pincodes = PincodeSerializer(many=True, read_only=False)
+    pincodes = PincodeValidationSerializer(many=True)
+    sync_users = serializers.BooleanField(required=False, default=True)
 
     class Meta:
         model = Region
         fields = "__all__"
 
-    def _sync_pincodes_and_users(self, region, pincodes: list[dict]):
-        """Create pincodes and bulk-update users whose SHG pin code matches."""
+    def _create_pincodes(self, region: Region, pincodes: list[dict]):
+        """Create pincodes for the region and return the saved codes."""
         pincode_dataset = [
             {"region": region.id, "code": pincode.get("code")}
             for pincode in pincodes
         ]
         pincode_serializer = PincodeSerializer(data=pincode_dataset, many=True)
+        if not pincode_serializer.is_valid():
+            print(pincode_dataset)
+            print(pincode_serializer.errors)
         pincode_serializer.is_valid(raise_exception=True)
         pincode_serializer.save()
+        return [p["code"] for p in pincode_serializer.validated_data]
 
-        codes = [p["code"] for p in pincode_serializer.validated_data]
-        # Bulk-fetch and bulk-update instead of saving one user at a time
-        users = User.objects.filter(shg__pin_code__in=codes)
-        users.update(region=region)
+    def _sync_users(self, region: Region, codes: list[str]):
+        """Bulk-update users whose SHG pin code matches the given codes."""
+        User.objects.filter(shg__pin_code__in=codes).update(
+            region=region, manager=region.admin
+        )
 
+    @transaction.atomic
     def create(self, validated_data: dict):
         pincodes: list[dict] = validated_data.pop("pincodes", [])
+        sync_users: bool = validated_data.pop("sync_users", True)
+
         region = super().create(validated_data)
-        self._sync_pincodes_and_users(region, pincodes)
+        codes = self._create_pincodes(region, pincodes)
+
+        if sync_users:
+            self._sync_users(region, codes)
+
         return region
 
     def update(self, instance: Region, validated_data: dict):
         pincodes: list[dict] = validated_data.pop("pincodes", [])
+        sync_users: bool = validated_data.pop("sync_users", True)
 
-        # Update the Region scalar fields
         instance = super().update(instance, validated_data)
 
         # Remove pincodes that are no longer in the payload
         incoming_codes = {p.get("code") for p in pincodes}
         instance.pincodes.exclude(code__in=incoming_codes).delete()
 
-        # Determine which codes are genuinely new
-        existing_codes = set(
-            instance.pincodes.values_list("code", flat=True)
-        )
-        new_pincodes = [
-            p for p in pincodes if p.get("code") not in existing_codes
-        ]
+        # Only create genuinely new pincodes
+        existing_codes = set(instance.pincodes.values_list("code", flat=True))
+        new_pincodes = [p for p in pincodes if p.get("code") not in existing_codes]
 
         if new_pincodes:
-            self._sync_pincodes_and_users(instance, new_pincodes)
+            new_codes = self._create_pincodes(instance, new_pincodes)
+            if sync_users:
+                self._sync_users(instance, new_codes)
 
         return instance
 
@@ -163,12 +174,13 @@ class SendInviteSerializer(serializers.ModelSerializer):
     region_name = serializers.CharField(source="region.name", read_only=True)
 
     # Forbidden roles for invite (used in both validate_roles and _validate_permissions)
-    UNINVITABLE_ROLES: frozenset[str] = frozenset({Roles.SUPER_ADMIN, Roles.CM, Roles.CCM})
-    MANAGER_REQUIRED_ROLES: frozenset[str] = frozenset({Roles.TRAINER, Roles.FINANCIER})
+    UNINVITABLE_ROLES: frozenset[str] = frozenset({Roles.SUPER_ADMIN})
+    MANAGER_REQUIRED_ROLES: frozenset[str] = frozenset({Roles.TRAINER, Roles.FINANCIER, Roles.CM, Roles.CCM})
 
     class Meta:
         model = User
         fields = [
+            "id",
             "first_name",
             "last_name",
             "email",
@@ -179,6 +191,7 @@ class SendInviteSerializer(serializers.ModelSerializer):
             "region_name",
         ]
         extra_kwargs = {
+            "id": {"read_only": True},
             "first_name": {"required": True, "allow_blank": False},
             "last_name": {"required": True, "allow_blank": False},
             "email": {"required": True, "allow_blank": False},
@@ -194,7 +207,11 @@ class SendInviteSerializer(serializers.ModelSerializer):
         return value.lower() if value else value
 
     def validate_region(self, value: Region) -> Region:
-        if value and value.admin:
+        users_in_region = User.objects.filter(
+            region=value,
+            roles__name__in=[Roles.ADMIN]
+        )
+        if value and value.admin or users_in_region.exists():
             raise serializers.ValidationError("Region already has an admin.")
         return value
 
@@ -296,7 +313,7 @@ class SendInviteSerializer(serializers.ModelSerializer):
 
             if role_names & self.MANAGER_REQUIRED_ROLES:
                 if not attrs.get("manager"):
-                    self._raise("manager", "Trainer/Financier require a manager.")
+                    self._raise("manager", "This field is required.")
                 return
 
             # CM / CCM already blocked in validate_roles; nothing else to check
@@ -317,6 +334,7 @@ class SendInviteSerializer(serializers.ModelSerializer):
     # CREATE
     # -------------------------
 
+    @transaction.atomic
     def create(self, validated_data: dict) -> User:
         roles: list[Role] = validated_data.pop("roles")
         role_names: frozenset[str] = frozenset(r.name for r in roles)
@@ -326,6 +344,7 @@ class SendInviteSerializer(serializers.ModelSerializer):
         if manager and role_names & self.MANAGER_REQUIRED_ROLES:
             validated_data["region"] = manager.region
 
+        validated_data["created_by"] = self.context["request"].user
         user: User = super().create(validated_data)
         user.roles.set(roles)
 

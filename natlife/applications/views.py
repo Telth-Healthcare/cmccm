@@ -21,12 +21,12 @@ class ApplicationViewSet(ModelViewSet):
     serializer_class = ApplicationSerializer
     permission_classes = [RoleBasedPermission]
     role_permissions = {
-        "list": [Roles.SUPER_ADMIN, Roles.ADMIN, Roles.FINANCIER, Roles.TRAINER],
-        "retrieve": [Roles.SUPER_ADMIN, Roles.ADMIN, Roles.CM, Roles.CCM],
-        "create": [Roles.SUPER_ADMIN, Roles.ADMIN, Roles.CM, Roles.CCM],
-        "update": [Roles.SUPER_ADMIN],
+        "list": [Roles.ADMIN, Roles.FINANCIER, Roles.TRAINER],
+        "retrieve": [Roles.ADMIN, Roles.FINANCIER, Roles.CM, Roles.CCM],
+        "create": [Roles.ADMIN, Roles.CM, Roles.CCM],
+        "update": [Roles.ADMIN],
         "partial_update": [Roles.ADMIN, Roles.FINANCIER, Roles.TRAINER],
-        "destroy": [Roles.SUPER_ADMIN],
+        "destroy": [],
     }
 
     def get_queryset(self):
@@ -53,7 +53,7 @@ class ApplicationViewSet(ModelViewSet):
     @transaction.atomic
     def perform_create(self, serializer):
         response = super().perform_create(serializer)
-        shg = SHGService.get_shg(self.request.user)
+        shg = SHGService.get_shg(serializer.instance.user)
         shg.is_submitted = True
         shg.save()
         ApplicationService.create_application(

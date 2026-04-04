@@ -13,6 +13,8 @@ from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
 from allauth.account.models import EmailConfirmationHMAC
 from allauth.account import app_settings
 
+from core.constants import Roles
+
 from .models import User
 from .serializers import UserSerializer
 
@@ -34,13 +36,15 @@ class CustomAccountAdapter(DefaultAccountAdapter):
     """
 
     def send_confirmation_mail(self, request, emailconfirmation: EmailConfirmationHMAC, signup):
-        confirmation_sent_on = emailconfirmation.email_address.user.created_at
+        user: User = emailconfirmation.email_address.user
+
+        confirmation_sent_on = user.created_at
         expiration_date = confirmation_sent_on + timezone.timedelta(days=EMAIL_CONFIRMATION_EXPIRE_DAYS)
         validity = timezone.timedelta(days=EMAIL_CONFIRMATION_EXPIRE_DAYS)
 
         ctx = {
-            "user": emailconfirmation.email_address.user,
-            "role": emailconfirmation.email_address.user.roles.first().name,
+            "user": user,
+            "role": user.roles.first().name,
             "validity": validity.__str__().split(", ")[0],
             "expires_on": expiration_date.strftime("%B %d, %Y"),
             "expires_time": expiration_date.strftime("%I:%M %p")
@@ -55,12 +59,17 @@ class CustomAccountAdapter(DefaultAccountAdapter):
         
         if signup:
             email_template = "account/email/email_confirmation_signup"
+        elif user.role_names.intersection({Roles.ADMIN}):
+            ctx.update({
+                "region_name": user.region.name.title(),
+            })
+            email_template = "core/admin_invite"
         else:
             email_template = "account/email/email_confirmation"
 
         self.send_mail(
             email_template,
-            emailconfirmation.email_address.email,
+            user.email,
             context=ctx
         )
 

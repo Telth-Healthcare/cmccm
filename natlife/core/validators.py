@@ -42,8 +42,8 @@ def dob_validator(value):
     if value > today:
         raise ValidationError("Date of birth cannot be in the future.")
 
-    min_dob = today - timedelta(days=55 * 365)
+    min_dob = today - timedelta(days=99 * 365)
     max_dob = today - timedelta(days=18 * 365)
 
     if not (min_dob <= value <= max_dob):
-        raise ValidationError("Age must be between 18 and 55.")
+        raise ValidationError("Age must be between 18 and 99.")
