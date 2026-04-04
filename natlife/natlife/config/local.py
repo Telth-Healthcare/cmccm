@@ -41,3 +41,11 @@ SHG_URL = "http://127.0.0.1:8000"
 APPLICATIONS_URL = "http://127.0.0.1:8000"
 ADMIN_PANEL_URL = "http://127.0.0.1:8000"
 TRAINER_URL = "http://127.0.0.1:8000"
+
+
+# ------------------------------------------------------------------------------
+# HEADLESS FRONTEND URLS
+# ------------------------------------------------------------------------------
+HEADLESS_FRONTEND_URLS = build_headless_frontend_urls(
+    base_url="http://localhost:5173"
+)

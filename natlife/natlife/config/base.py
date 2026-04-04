@@ -123,19 +123,18 @@ EMAIL_BACKEND = "anymail.backends.resend.EmailBackend"
 # ------------------------------------------------------------------------------
 # HEADLESS FRONTEND URLS
 # ------------------------------------------------------------------------------
-FRONTEND_BASE_URL = os.getenv("FRONTEND_BASE_URL", "http://localhost:5173")
+def build_headless_frontend_urls(base_url: str):
+    return {
+        "account_confirm_email": f"{base_url}/invite/accept/?key={{key}}",
+        "account_reset_password": f"{base_url}/account/password/reset",
+        "account_reset_password_from_key": f"{base_url}/reset-password/?key={{key}}",
+        "account_signup": f"{base_url}/account/signup",
+        "socialaccount_login_error": f"{base_url}/account/provider/callback",
 
-HEADLESS_FRONTEND_URLS = {
-    "account_confirm_email": FRONTEND_BASE_URL + "/invite/accept/?key={key}",
-    "account_reset_password": FRONTEND_BASE_URL + "/account/password/reset",
-    "account_reset_password_from_key": FRONTEND_BASE_URL + "/reset-password/?key={key}",
-    "account_signup": FRONTEND_BASE_URL + "/account/signup",
-    "socialaccount_login_error": FRONTEND_BASE_URL + "/account/provider/callback",
-
-    "accept_invite": FRONTEND_BASE_URL + "/invite/accept/?key={key}",
-    "admin_login_url": "/admin/signin",
-    "shg_login_url": FRONTEND_BASE_URL + "/shg-auth/signin",
-}
+        "accept_invite": f"{base_url}/invite/accept/?key={{key}}",
+        "admin_login_url": "/admin/signin",
+        "shg_login_url": f"{base_url}/shg-auth/signin",
+    }
 
 
 INVITATION_TTL = timedelta(days=7)

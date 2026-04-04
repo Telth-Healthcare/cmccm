@@ -1,3 +1,9 @@
 from rest_framework import serializers
 
-# Create serializers here.
+from applications.models import Application
+
+
+class ApplicationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Application
+        fields = ["created_at"]

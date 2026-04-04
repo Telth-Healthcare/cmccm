@@ -26,10 +26,12 @@ class SHGSerializer(serializers.ModelSerializer):
     def update(self, instance: SHG, validated_data: dict):
         pincode = validated_data.get("pin_code")
         if pincode:
-            pincode_obj = Pincode.objects.filter(code=pincode).first()
-            if pincode_obj:
-                instance.user.region = pincode_obj.region
-                instance.user.save()
+            pincode_obj = Pincode.objects.filter(code=pincode)
+            if pincode_obj.exists():
+                region = pincode_obj.first().region
+                instance.user.region = region
+                instance.user.manager = region.admin
+            instance.user.save()
         return super().update(instance, validated_data)
 
 

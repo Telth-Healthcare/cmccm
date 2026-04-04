@@ -41,3 +41,11 @@ SHG_URL = os.getenv("STAGING_SHG_URL")
 APPLICATIONS_URL = os.getenv("STAGING_APPLICATIONS_URL")
 TRAINER_URL = os.getenv("STAGING_TRAINER_URL")
 ADMIN_PANEL_URL = os.getenv("STAGING_ADMIN_PANEL_URL")
+
+
+# ------------------------------------------------------------------------------
+# HEADLESS FRONTEND URLS
+# ------------------------------------------------------------------------------
+HEADLESS_FRONTEND_URLS = build_headless_frontend_urls(
+    base_url="https://cm-ccm-onboarding.vercel.app"
+)

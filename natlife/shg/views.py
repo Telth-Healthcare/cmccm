@@ -22,7 +22,7 @@ class SHGViewSet(ModelViewSet):
     permission_classes = [RoleBasedPermission]
     role_permissions = {
         "list": [Roles.SUPER_ADMIN],
-        "retrieve": [Roles.SUPER_ADMIN, Roles.ADMIN, Roles.CM, Roles.CCM],
+        "retrieve": [Roles.SUPER_ADMIN, Roles.ADMIN, Roles.FINANCIER, Roles.CM, Roles.CCM],
         "create": [Roles.SUPER_ADMIN, Roles.ADMIN, Roles.CM, Roles.CCM],
         "update": [Roles.SUPER_ADMIN, Roles.ADMIN, Roles.CM, Roles.CCM],
         "partial_update": [Roles.SUPER_ADMIN, Roles.ADMIN, Roles.CM, Roles.CCM],

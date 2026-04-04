@@ -51,7 +51,7 @@ class ApplicationSerializer(ModelSerializer):
     def create(self, validated_data):
         validated_data["reference_number"] = ApplicationService.generate_reference_number()
         return super().create(validated_data)
-    
+
     def validate_status(self, value):
         if not self.instance:
             return value
@@ -65,10 +65,12 @@ class ApplicationSerializer(ModelSerializer):
 
         if value not in allowed:
             raise ValidationError(f"Cannot transition from {current_status} to {value}")
-    
+
         is_eligible = instance.is_eligible_for_production()
         if value == ApplicationStatus.PRODUCTION and not is_eligible:
-            raise ValidationError("Application is not eligible for production")
+            raise ValidationError({
+                "status": "This application is not eligible for production"
+            })
 
         return value
 
@@ -92,7 +94,7 @@ class ApplicationSerializer(ModelSerializer):
         document = shg.documents.exists()
         if not document:
             return None
-        
+
         payload = []
         for document in shg.documents.all():
             payload.append({
