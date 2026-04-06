@@ -117,7 +117,7 @@ class SubjectMaterial(models.Model):
     file = models.FileField(
         upload_to="course_materials/",
         max_length=500,
-        validators=[FileSizeValidator(3)],
+        validators=[FileSizeValidator(30)],
         null=True,
         blank=True
     )

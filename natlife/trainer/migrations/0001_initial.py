@@ -85,7 +85,7 @@ class Migration(migrations.Migration):
                 ('description', models.TextField(blank=True)),
                 ('type', models.CharField(choices=[('syllabus', 'Syllabus'), ('lecture_notes', 'Lecture Notes'), ('assignment', 'Assignment'), ('reference_material', 'Reference Material'), ('other', 'Other')], max_length=50)),
                 ('url', models.URLField(blank=True, null=True)),
-                ('file', models.FileField(blank=True, max_length=500, null=True, upload_to='course_materials/', validators=[core.validators.FileSizeValidator(3)])),
+                ('file', models.FileField(blank=True, max_length=500, null=True, upload_to='course_materials/', validators=[core.validators.FileSizeValidator(30)])),
                 ('uploaded_at', models.DateTimeField(auto_now_add=True)),
                 ('subject', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='materials', to='trainer.subject')),
             ],
