@@ -7,7 +7,12 @@ from trainer.models import (
     CourseCompletion,
 )
 
-from .constants import ApplicationStatus, PaymentClearance
+from .constants import (
+    ApplicationStatus,
+    PaymentType,
+    PaymentMethod,
+    PaymentClearance
+)
 
 
 AUTH_USER_MODEL = getattr(settings, "AUTH_USER_MODEL")
@@ -25,6 +30,18 @@ class Application(models.Model):
         max_length=30,
         choices=ApplicationStatus.choices,
         default=ApplicationStatus.SUBMITTED,
+    )
+
+    payment_type = models.CharField(
+        max_length=15,
+        choices=PaymentType.choices,
+        default=PaymentType.INSTALLMENTS,
+    )
+
+    payment_method = models.CharField(
+        max_length=15,
+        choices=PaymentMethod.choices,
+        default=PaymentMethod.ONLINE_PAYMENT,
     )
 
     payment_status = models.CharField(
