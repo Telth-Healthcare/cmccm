@@ -4,5 +4,7 @@
 log/
 media/
 __pycache__/
-deployment_guide.md
+*.md
+*.sh
+*.json
 *.sqlite3
