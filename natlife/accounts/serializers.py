@@ -39,10 +39,15 @@ class RegionSerializer(serializers.ModelSerializer):
         ]
         pincode_serializer = PincodeSerializer(data=pincode_dataset, many=True)
         if not pincode_serializer.is_valid():
-            print(pincode_dataset)
-            print(pincode_serializer.errors)
-        pincode_serializer.is_valid(raise_exception=True)
-        pincode_serializer.save()
+            errors = []
+            for dataset, errors_data in zip(pincode_dataset, pincode_serializer.errors):
+                dataset.pop("region")
+                error_code = errors_data.get("code")
+                errors.append({**dataset, "errors": error_code}) if error_code else None
+            raise serializers.ValidationError(errors)
+        else:
+            pincode_serializer.save()
+
         return [p["code"] for p in pincode_serializer.validated_data]
 
     def _sync_users(self, region: Region, codes: list[str]):
