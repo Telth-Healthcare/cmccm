@@ -65,3 +65,22 @@ class SupabaseMediaStorage(Storage):
 
     def url(self, name):
         return self.client.storage.from_(self.bucket).get_public_url(name)
+
+    def delete(self, name):
+        """
+        Deletes a file from Supabase storage.
+        """
+        if not name:
+            return
+
+        try:
+            res = self.client.storage.from_(self.bucket).remove([name])
+
+            # Supabase may return list or dict depending on version
+            if isinstance(res, dict) and res.get("error"):
+                raise Exception(res["error"]["message"])
+
+        except Exception as e:
+            # Django expects delete to fail silently in most cases
+            # but we can log if needed
+            print(e)
