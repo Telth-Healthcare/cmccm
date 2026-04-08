@@ -66,8 +66,6 @@ class RoleBasedPermission(BasePermission):
 
         if user.role_names.intersection({Roles.ADMIN}):
             if obj_user:
-                print("Object user:", obj_user)
-                print("Manager:", obj_user.manager)
                 return obj_user.manager == user
             elif obj_is_document:
                 return obj_is_document.user.manager == user

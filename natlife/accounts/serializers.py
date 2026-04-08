@@ -103,6 +103,8 @@ class UserSerializer(serializers.ModelSerializer):
     invite_accepted = serializers.SerializerMethodField(read_only=True)
     region_name = serializers.CharField(source="region.name", read_only=True)
     manager_name = serializers.CharField(source="manager.get_full_name", read_only=True)
+    application_id = serializers.IntegerField(source="applications.id", read_only=True)
+    partner_id = serializers.IntegerField(source="shg.id", read_only=True)
 
 
     class Meta:

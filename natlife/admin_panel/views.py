@@ -51,7 +51,7 @@ class DashboardAPIView(APIView):
         application_qs = self.get_application_queryset()
     
         users_with_no_region = self.get_no_region_user_queryset().count()
-        application_count = application_qs.count()
+        application_count = application_qs.count() if application_qs else 0
 
         applications = ApplicationSerializer(
             application_qs, many=True
