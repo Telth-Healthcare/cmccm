@@ -49,7 +49,10 @@ class CreateSHGSerializer(serializers.ModelSerializer):
             "blood_group",
         ]
         read_only_fields = ["id"]
-    
+        extra_kwargs = {
+            "user": {"write_only": True}
+        }
+
     def validate_user(self, user):
         if user.has_role(Roles.CM) or user.has_role(Roles.CCM):
             return user
