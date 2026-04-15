@@ -79,7 +79,7 @@ class CourseCompletionViewSet(RoleFilteredQuerysetMixin, ModelViewSet):
     role_permissions = {
         "list": [Roles.ADMIN, Roles.TRAINER, Roles.CM, Roles.CCM],
         "retrieve": [Roles.ADMIN, Roles.TRAINER, Roles.CM, Roles.CCM],
-        "create": [Roles.CM, Roles.CCM],
+        "create": [Roles.ADMIN, Roles.TRAINER],
         "update": [],
         "partial_update": [],
         "destroy": [],
