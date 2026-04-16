@@ -44,6 +44,9 @@ ACCOUNT_PHONE_VERIFICATION_MAX_RESEND_COUNT = 3
 ACCOUNT_PHONE_VERIFICATION_TTL = timedelta(minutes=5).seconds
 
 ACCOUNT_LOGIN_BY_CODE_ENABLED = True
+ACCOUNT_RATE_LIMITS = {
+    "invite_resend": "3/m/ip"
+}
 
 
 # ------------------------------------------------------------------------------

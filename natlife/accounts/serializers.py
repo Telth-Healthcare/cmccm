@@ -366,6 +366,29 @@ class SendInviteSerializer(serializers.ModelSerializer):
         return user
 
 
+class ResendInviteSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=True)
+
+    def validate(self, attrs: dict) -> dict:
+        email = attrs.get("email")
+        user = User.objects.filter(email=email).first()
+
+        if not user:
+            raise serializers.ValidationError({"email": "Email address does not exist."})
+
+        emailaddress = EmailAddress.objects.filter(email=email).first()
+        if emailaddress.verified:
+            raise serializers.ValidationError({"email": "Email already accepted."})
+
+        return attrs
+
+    def save(self, **kwargs):
+        email = self.validated_data.get("email")
+        emailaddress = EmailAddress.objects.filter(email=email).first()
+        emailaddress.send_confirmation()
+        return emailaddress
+
+
 class AcceptInviteSerializer(serializers.Serializer):
 
     token = serializers.CharField(required=True)

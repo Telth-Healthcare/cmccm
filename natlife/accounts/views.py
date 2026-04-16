@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import transaction
+from django.utils.decorators import method_decorator
 
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.views import APIView
@@ -17,6 +18,7 @@ from allauth.account.adapter import get_adapter
 from allauth.headless import app_settings as headless_settings
 from allauth.headless.tokens.strategies.jwt.strategy import JWTTokenStrategy
 from allauth.account.models import EmailConfirmationHMAC
+from allauth.decorators import rate_limit
 
 from firebase_admin import auth
 
@@ -30,6 +32,7 @@ from .serializers import (
     RegionSerializer,
     UserSerializer,
     SendInviteSerializer,
+    ResendInviteSerializer,
     AcceptInviteSerializer,
     FirebaseLoginSerializer
 )
@@ -224,6 +227,26 @@ class SendInviteAPIView(APIView):
             "count": len(serializer.validated_data),
             "data": serializer.data,
         })
+
+
+# ─────────────────────────────────────────────
+# Resend Invite
+# ─────────────────────────────────────────────
+
+@method_decorator(rate_limit(action="invite_resend"), name="dispatch")
+class ResendInviteAPIView(APIView):
+
+    permission_classes = [RoleBasedPermission]
+    role_permissions = {
+        "post": [Roles.SUPER_ADMIN, Roles.ADMIN]
+    }
+
+    def post(self, request: Request):
+        serializer = ResendInviteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response({"status": HTTP_200_OK})
 
 
 # ─────────────────────────────────────────────

@@ -6,6 +6,7 @@ from .views import (
     RegionViewSet,
     UserViewSet,
     SendInviteAPIView,
+    ResendInviteAPIView,
     AcceptInviteAPIView,
     FirebaseLoginAPIView,
     JSONRateLimitView,
@@ -19,6 +20,7 @@ router.register("regions", RegionViewSet)
 
 urlpatterns = [
     path("invite/send/", SendInviteAPIView.as_view()),
+    path("invite/resend/", ResendInviteAPIView.as_view(), name="invite_resend"),
     path("invite/accept/", AcceptInviteAPIView.as_view()),
     path("firebase/login/", FirebaseLoginAPIView.as_view()),
     path("rate-limit/", JSONRateLimitView.as_view(), name="account_rate_limit"),
