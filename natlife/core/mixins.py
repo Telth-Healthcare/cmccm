@@ -72,11 +72,8 @@ class RoleBasedLogFilterMixin:
     def partner_filter(self, user) -> dict | None:
         return {"user": user}
 
-    def get_base_queryset(self):
-        return super().get_queryset()
-
     def get_queryset(self):
-        qs = self.get_base_queryset()
+        qs = super().get_queryset()
         user = self.request.user
 
         role_filter_map = [
