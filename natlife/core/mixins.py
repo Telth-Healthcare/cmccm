@@ -2,7 +2,33 @@ from .constants import Roles
 from .serializers import ActivityLogSerializer
 
 
-class RoleFilteredQuerysetMixin:
+class RoleBasedFilterBase:
+
+    def admin_filter(self, user) -> dict | None:
+        return {"user__manager": user}
+
+    def financier_filter(self, user) -> dict | None:
+        return {"assigned_financier": user}
+
+    def trainer_filter(self, user) -> dict | None:
+        return {"assigned_trainer": user}
+
+    def partner_filter(self, user) -> dict | None:
+        return {"user": user}
+
+    def get_filter_map(self):
+        return [
+            (Roles.SUPER_ADMIN, None),
+            (Roles.ADMIN, self.admin_filter),
+            (Roles.FINANCIER, self.financier_filter),
+            (Roles.TRAINER, self.trainer_filter),
+            (Roles.CM, self.partner_filter),
+            (Roles.CCM, self.partner_filter),
+        ]
+
+
+
+class RoleFilteredQuerysetMixin(RoleBasedFilterBase):
     """
     Filters querysets based on the requesting user's role.
 
@@ -18,32 +44,11 @@ class RoleFilteredQuerysetMixin:
             return {"created_by": user}
     """
 
-    def admin_filter(self, user) -> dict | None:
-        return None
-
-    def financier_filter(self, user) -> dict | None:
-        return None
-
-    def trainer_filter(self, user) -> dict | None:
-        return None
-
-    def partner_filter(self, user) -> dict | None:
-        return None
-
     def get_queryset(self):
         qs = super().get_queryset()
         user = self.request.user
 
-        role_filter_map = [
-            (Roles.SUPER_ADMIN, None),
-            (Roles.ADMIN, self.admin_filter),
-            (Roles.FINANCIER, self.financier_filter),
-            (Roles.TRAINER, self.trainer_filter),
-            (Roles.CM, self.partner_filter),
-            (Roles.CCM, self.partner_filter),
-        ]
-
-        for role, filter_fn in role_filter_map:
+        for role, filter_fn in self.get_filter_map():
             if user.has_role(role):
                 if filter_fn is None:
                     return qs  # SUPER_ADMIN: unfiltered
@@ -53,39 +58,18 @@ class RoleFilteredQuerysetMixin:
         return qs.none()
 
 
-class RoleBasedLogFilterMixin:
+class RoleBasedLogFilterMixin(RoleBasedFilterBase):
     """
     Filters activity logs based on the requesting user's role and 
     the object type they are allowed to see.
     """
     serializer_class = ActivityLogSerializer
 
-    def admin_filter(self, user) -> dict | None:
-        return {"user__manager": user}
-
-    def financier_filter(self, user) -> dict | None:
-        return {"assigned_financier": user}
-
-    def trainer_filter(self, user) -> dict | None:
-        return {"assigned_trainer": user}
-
-    def partner_filter(self, user) -> dict | None:
-        return {"user": user}
-
     def get_queryset(self):
         qs = super().get_queryset()
         user = self.request.user
 
-        role_filter_map = [
-            (Roles.SUPER_ADMIN, None),
-            (Roles.ADMIN, self.admin_filter),
-            (Roles.FINANCIER, self.financier_filter),
-            (Roles.TRAINER, self.trainer_filter),
-            (Roles.CM, self.partner_filter),
-            (Roles.CCM, self.partner_filter),
-        ]
-
-        for role, filter_fn in role_filter_map:
+        for role, filter_fn in self.get_filter_map():
             if user.has_role(role):
                 if filter_fn is None:
                     return qs  # SUPER_ADMIN: unfiltered
