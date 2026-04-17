@@ -69,13 +69,6 @@ class ApplicationViewSet(RoleFilteredQuerysetMixin, ModelViewSet):
         )
         return response
 
-    def perform_update(self, serializer):
-        ApplicationService.update_application(
-            actor=self.request.user,
-            application=serializer.instance,
-        )
-        return super().perform_update(serializer)
-
     def partial_update(self, request, *args, **kwargs):
         ApplicationService.update_status(
             actor=self.request.user,
