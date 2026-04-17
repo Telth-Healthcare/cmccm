@@ -34,6 +34,10 @@ class ActivityService:
             metadata=metadata or {},
         )
 
+    @staticmethod
+    def get_logs():
+        return ActivityLog.objects.all()
+
 
 class CoreService:
 

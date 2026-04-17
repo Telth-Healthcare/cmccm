@@ -20,6 +20,9 @@ class RoleFilteredQuerysetMixin:
     def admin_filter(self, user) -> dict | None:
         return None
 
+    def financier_filter(self, user) -> dict | None:
+        return None
+
     def trainer_filter(self, user) -> dict | None:
         return None
 
@@ -33,6 +36,7 @@ class RoleFilteredQuerysetMixin:
         role_filter_map = [
             (Roles.SUPER_ADMIN, None),
             (Roles.ADMIN, self.admin_filter),
+            (Roles.FINANCIER, self.financier_filter),
             (Roles.TRAINER, self.trainer_filter),
             (Roles.CM, self.partner_filter),
             (Roles.CCM, self.partner_filter),
@@ -44,5 +48,53 @@ class RoleFilteredQuerysetMixin:
                     return qs  # SUPER_ADMIN: unfiltered
                 filters = filter_fn(user)
                 return qs.filter(**filters).distinct() if filters else qs.none()
+
+        return qs.none()
+
+
+class RoleBasedLogFilterMixin:
+    """
+    Filters activity logs based on the requesting user's role and 
+    the object type they are allowed to see.
+    """
+
+    def admin_filter(self, user) -> dict | None:
+        return {"user__manager": user}
+
+    def financier_filter(self, user) -> dict | None:
+        return {"assigned_financier": user}
+
+    def trainer_filter(self, user) -> dict | None:
+        return {"assigned_trainer": user}
+
+    def partner_filter(self, user) -> dict | None:
+        return {"user": user}
+
+    def get_base_queryset(self):
+        return super().get_queryset()
+
+    def get_queryset(self):
+        qs = self.get_base_queryset()
+        user = self.request.user
+
+        role_filter_map = [
+            (Roles.SUPER_ADMIN, None),
+            (Roles.ADMIN, self.admin_filter),
+            (Roles.FINANCIER, self.financier_filter),
+            (Roles.TRAINER, self.trainer_filter),
+            (Roles.CM, self.partner_filter),
+            (Roles.CCM, self.partner_filter),
+        ]
+
+        for role, filter_fn in role_filter_map:
+            if user.has_role(role):
+                if filter_fn is None:
+                    return qs  # SUPER_ADMIN: unfiltered
+                filters = filter_fn(user)
+                app_ids = self.model.objects.filter(
+                    **filters
+                ).values_list("pk", flat=True)
+
+                return qs.filter(object_id__in=app_ids)
 
         return qs.none()
