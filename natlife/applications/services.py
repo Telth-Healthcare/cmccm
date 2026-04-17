@@ -44,6 +44,10 @@ class ApplicationService:
         return f"CM-{year}-{str(count).zfill(4)}"
 
     @staticmethod
+    def get_application_logs():
+        return ActivityService.get_logs().filter(object_type="Application")
+
+    @staticmethod
     def create_application(actor, application: Application):
 
         ActivityService.log(

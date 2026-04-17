@@ -6,6 +6,7 @@ from core.views import ConstantsAPIView
 
 from applications.views import (
     ApplicationViewSet,
+    ApplicationActivityLogAPIView,
 )
 
 router = DefaultRouter()
@@ -17,6 +18,11 @@ urlpatterns = [
         "constants/", 
         ConstantsAPIView.as_view(constants_module="applications.constants"), 
         name="application-constants"
+    ),
+    path(
+        "app/logs/",
+        ApplicationActivityLogAPIView.as_view({"get": "list"}),
+        name="application-logs",
     ),
     path("", include(router.urls)),
 ]

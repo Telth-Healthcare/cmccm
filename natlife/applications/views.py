@@ -1,10 +1,15 @@
 from django.db import transaction
 
-from rest_framework.viewsets import ModelViewSet
+from rest_framework.viewsets import ModelViewSet, GenericViewSet
+from rest_framework.mixins import ListModelMixin
 from rest_framework.filters import OrderingFilter
 
 from core.permissions import RoleBasedPermission
 from core.constants import Roles
+from core.mixins import (
+    RoleFilteredQuerysetMixin,
+    RoleBasedLogFilterMixin,
+)
 
 from shg.services import SHGService
 
@@ -14,7 +19,7 @@ from .services import ApplicationService
 from .serializers import ApplicationSerializer
 
 
-class ApplicationViewSet(ModelViewSet):
+class ApplicationViewSet(RoleFilteredQuerysetMixin, ModelViewSet):
     queryset = Application.objects.all()
     filter_backends = [OrderingFilter]
     ordering = ["-id"]
@@ -29,26 +34,26 @@ class ApplicationViewSet(ModelViewSet):
         "destroy": [],
     }
 
-    def get_queryset(self):
-        qs = super().get_queryset()
-        user = self.request.user
+    def admin_filter(self, user):
+        return {
+            "user__region": user.region,
+            "user__is_active": True,
+        }
 
-        if user.has_role(Roles.SUPER_ADMIN):
-            return qs
-        elif user.has_role(Roles.ADMIN):
-            return qs.filter(
-                user__region=user.region,
-                user__is_active=True,
-            )
-        elif user.has_role(Roles.FINANCIER):
-            """
-            Fianacier should see applications assigned only to them
-            """
-            return qs.filter(assigned_financier=user).exclude(user__is_active=False)
-        elif user.has_role(Roles.TRAINER):
-            return qs.filter(assigned_trainer=user).exclude(payment_status=PaymentClearance.PENDING)
+    def financier_filter(self, user):
+        return {
+            "assigned_financier": user,
+            "user__is_active": True,
+        }
 
-        return qs.filter(user=user)
+    def trainer_filter(self, user):
+        return {
+            "assigned_trainer": user,
+            "payment_status": PaymentClearance.PENDING,
+        }
+    
+    def partner_filter(self, user):
+        return {"user": user}
 
     @transaction.atomic
     def perform_create(self, serializer):
@@ -61,20 +66,34 @@ class ApplicationViewSet(ModelViewSet):
             application=serializer.instance,
         )
         return response
-    
+
     def perform_update(self, serializer):
-        response = super().perform_update(serializer)
         ApplicationService.update_application(
             actor=self.request.user,
             application=serializer.instance,
         )
-        return response
-    
+        return super().perform_update(serializer)
+
     def partial_update(self, request, *args, **kwargs):
-        response = super().partial_update(request, *args, **kwargs)
         ApplicationService.update_status(
             actor=self.request.user,
             application=self.get_object(),
             new_status=request.data.get("status"),
         )
-        return response
+        return super().partial_update(request, *args, **kwargs)
+
+
+class ApplicationActivityLogAPIView(
+    RoleBasedLogFilterMixin,
+    ListModelMixin,
+    GenericViewSet
+):
+    queryset = ApplicationService.get_application_logs()
+    model = Application
+    permission_classes = [RoleBasedPermission]
+    role_permissions = {
+        "list": [
+            Roles.ADMIN, Roles.FINANCIER, Roles.TRAINER,
+            Roles.CM, Roles.CCM
+        ]
+    }
