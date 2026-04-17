@@ -1,4 +1,5 @@
 from .constants import Roles
+from .serializers import ActivityLogSerializer
 
 
 class RoleFilteredQuerysetMixin:
@@ -57,6 +58,7 @@ class RoleBasedLogFilterMixin:
     Filters activity logs based on the requesting user's role and 
     the object type they are allowed to see.
     """
+    serializer_class = ActivityLogSerializer
 
     def admin_filter(self, user) -> dict | None:
         return {"user__manager": user}
