@@ -4,6 +4,8 @@ from rest_framework.viewsets import ModelViewSet, GenericViewSet
 from rest_framework.mixins import ListModelMixin
 from rest_framework.filters import OrderingFilter
 
+from django_filters.rest_framework import DjangoFilterBackend
+
 from core.permissions import RoleBasedPermission
 from core.constants import Roles
 from core.mixins import (
@@ -97,3 +99,5 @@ class ApplicationActivityLogAPIView(
             Roles.CM, Roles.CCM
         ]
     }
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = {"object_id": ["exact"]}
