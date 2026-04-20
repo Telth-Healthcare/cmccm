@@ -52,7 +52,7 @@ class RegionSerializer(serializers.ModelSerializer):
 
     def _sync_users(self, region: Region, codes: list[str]):
         """Bulk-update users whose SHG pin code matches the given codes."""
-        User.objects.filter(shg__pin_code__in=codes).update(
+        User.objects.filter(shg__pincode__in=codes).update(
             region=region, manager=region.admin
         )
 

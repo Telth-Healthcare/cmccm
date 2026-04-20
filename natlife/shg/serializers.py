@@ -24,7 +24,7 @@ class SHGSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "created_at", "updated_at"]
     
     def update(self, instance: SHG, validated_data: dict):
-        pincode = validated_data.get("pin_code")
+        pincode = validated_data.get("pincode")
         if pincode:
             pincode_obj = Pincode.objects.filter(code=pincode)
             if pincode_obj.exists():

@@ -47,7 +47,7 @@ class SHG(models.Model):
     village = models.CharField(max_length=255)
     state = models.CharField(max_length=100)
     country = models.CharField(max_length=100, default="IN")
-    pin_code = models.CharField(
+    pincode = models.CharField(
         max_length=6,
         validators=[
             validators.MinLengthValidator(6),
